@@ -1,0 +1,67 @@
+export const leads = [
+    {
+        id: 1,
+        companyName: 'Future Tech Solutions',
+        contactPerson: 'James Wilson',
+        email: 'james@futuretech.com',
+        phone: '+1 234 567 8920',
+        source: 'Website Inquiry',
+        status: 'New',
+        industry: 'Technology',
+        notes: 'Interested in tax planning services for a growing tech startup',
+        createdAt: '2023-07-10',
+        assignedTo: 2, // User ID
+    },
+    {
+        id: 2,
+        companyName: 'Green Energy Co',
+        contactPerson: 'Linda Green',
+        email: 'linda@greenenergy.com',
+        phone: '+1 234 567 8921',
+        source: 'Referral',
+        status: 'Contacted',
+        industry: 'Energy',
+        notes: 'Referred by ABC Corporation, needs compliance advisory',
+        createdAt: '2023-07-15',
+        assignedTo: 2, // User ID
+    },
+    {
+        id: 3,
+        companyName: 'Local Retail Chain',
+        contactPerson: 'Robert Brown',
+        email: 'robert@localretail.com',
+        phone: '+1 234 567 8922',
+        source: 'Trade Show',
+        status: 'Qualified',
+        industry: 'Retail',
+        notes: 'Multiple locations requiring consolidated accounting services',
+        createdAt: '2023-07-20',
+        assignedTo: 3, // User ID
+    },
+    {
+        id: 4,
+        companyName: 'Healthcare Innovations',
+        contactPerson: 'Susan Taylor',
+        email: 'susan@healthcareinno.com',
+        phone: '+1 234 567 8923',
+        source: 'Cold Call',
+        status: 'Negotiation',
+        industry: 'Healthcare',
+        notes: 'Growing healthcare provider needing financial advisory services',
+        createdAt: '2023-07-25',
+        assignedTo: 2, // User ID
+    },
+    {
+        id: 5,
+        companyName: 'Educational Services Inc',
+        contactPerson: 'Mark Davis',
+        email: 'mark@eduservices.com',
+        phone: '+1 234 567 8924',
+        source: 'Email Campaign',
+        status: 'Proposal Sent',
+        industry: 'Education',
+        notes: 'Sent proposal for tax audit and compliance services',
+        createdAt: '2023-07-30',
+        assignedTo: 3, // User ID
+    },
+]; 
