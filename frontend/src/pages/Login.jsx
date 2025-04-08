@@ -45,6 +45,7 @@ const Login = () => {
   const onSubmit = async (data) => {
     try {
       await login(data);
+      console.log("Login successful", data);
       // Navigation will happen automatically due to the useEffect above
     } catch (error) {
       // Error is handled by the auth store

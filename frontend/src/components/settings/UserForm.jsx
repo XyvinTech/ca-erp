@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { ROLES } from "../../config/constants";
+import { userApi } from "../../api/userApi";
+import { toast } from "react-toastify";
 
 const departments = [
   "Management",
@@ -43,12 +45,24 @@ const UserForm = ({ user = null, onSubmit, onCancel }) => {
   const submitHandler = async (data) => {
     setLoading(true);
     try {
-      // In a real app, this would send data to an API
-      // For demo purposes, just call onSubmit with the form data
-      onSubmit(data);
-      setLoading(false);
+      let response;
+      if (isEditMode) {
+        // Update existing user
+        const { password, confirmPassword, ...updateData } = data;
+        response = await userApi.updateUser(user._id, updateData);
+        toast.success("User updated successfully");
+      } else {
+        // Create new user
+        const { confirmPassword, ...createData } = data;
+        response = await userApi.createUser(createData);
+        toast.success("User created successfully");
+      }
+      
+      onSubmit(response);
     } catch (error) {
       console.error("Error saving user:", error);
+      toast.error(error.message || "Failed to save user. Please try again.");
+    } finally {
       setLoading(false);
     }
   };

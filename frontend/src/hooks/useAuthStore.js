@@ -14,34 +14,38 @@ const useAuthStore = create((set, get) => ({
     login: async (credentials) => {
         try {
             set({ isLoading: true, error: null });
+            console.log('Attempting login with credentials:', credentials);
 
-            // In a real app, this would call authApi.login()
-            // For demo, we'll match against dummy data
-            const matchedUser = users.find(
-                user => user.email === credentials.email
-            );
+            // Call the real API endpoint
+            const response = await authApi.login(credentials);
+            
+            // Store user data in localStorage
+            localStorage.setItem('userData', JSON.stringify(response.data));
+            
+            console.log('Login response:', response);
 
-            if (!matchedUser) {
-                throw new Error('Invalid email or password');
+            if (!response || !response.token) {
+                throw new Error('Invalid response from server');
             }
 
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 800));
+            const { token, data: user } = response;
 
-            const token = 'dummy-jwt-token';
+            // Store the token
             localStorage.setItem('auth_token', token);
 
             set({
-                user: matchedUser,
+                user,
                 isAuthenticated: true,
                 isLoading: false,
             });
 
-            return { user: matchedUser, token };
+            return { user, token };
         } catch (error) {
+            console.error('Login error:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Login failed';
             set({
                 isLoading: false,
-                error: error.message,
+                error: errorMessage,
             });
             throw error;
         }
@@ -51,10 +55,8 @@ const useAuthStore = create((set, get) => ({
         try {
             set({ isLoading: true });
 
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            localStorage.removeItem('auth_token');
+            // Call the real logout API
+            await authApi.logout();
 
             set({
                 user: null,
@@ -62,6 +64,7 @@ const useAuthStore = create((set, get) => ({
                 isLoading: false,
             });
         } catch (error) {
+            console.error('Logout error:', error);
             set({
                 isLoading: false,
                 error: error.message,
@@ -83,18 +86,16 @@ const useAuthStore = create((set, get) => ({
 
             set({ isLoading: true });
 
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            // For demo, just use the admin user
-            const userData = users.find(user => user.role === ROLES.ADMIN);
+            // Get current user from API
+            const { data: user } = await authApi.getCurrentUser();
 
             set({
-                user: userData,
+                user,
                 isAuthenticated: true,
                 isLoading: false,
             });
         } catch (error) {
+            console.error('Auth check error:', error);
             localStorage.removeItem('auth_token');
             set({
                 user: null,

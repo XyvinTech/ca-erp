@@ -51,32 +51,37 @@ exports.login = async (req, res, next) => {
 
         // Validate email & password
         if (!email || !password) {
+            logger.warn('Login attempt with missing credentials');
             return next(new ErrorResponse('Please provide an email and password', 400));
         }
 
         // Check for user
         const user = await User.findOne({ email }).select('+password');
         if (!user) {
+            logger.warn(`Login attempt with non-existent email: ${email}`);
             return next(new ErrorResponse('Invalid credentials', 401));
         }
 
         // Check if user is active
         if (user.status === 'inactive') {
+            logger.warn(`Login attempt for inactive user: ${email}`);
             return next(new ErrorResponse('This account has been deactivated. Please contact an administrator.', 401));
         }
 
         // Check if password matches
         const isMatch = await user.matchPassword(password);
         if (!isMatch) {
+            logger.warn(`Login attempt with incorrect password for user: ${email}`);
             return next(new ErrorResponse('Invalid credentials', 401));
         }
 
-        // Log the login
-        logger.info(`User login: ${user.email} (${user._id})`);
+        // Log the successful login
+        logger.info(`User login successful: ${user.email} (${user._id})`);
 
         // Send token in response
         sendTokenResponse(user, 200, res);
     } catch (error) {
+        logger.error('Login error:', error);
         next(error);
     }
 };
