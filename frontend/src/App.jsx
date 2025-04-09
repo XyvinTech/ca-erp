@@ -8,11 +8,14 @@ import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
 import Tasks from "./pages/Tasks";
 import TaskDetail from "./pages/TaskDetail";
-import ClientDetail from "./pages/ClientDetail";
+import ClientDetails from "./pages/ClientDetails";
+import ClientEdit from "./pages/ClientEdit";
 import Documents from "./pages/Documents";
 import Finance from "./pages/Finance";
 import Settings from "./pages/Settings";
 import ErrorPage from "./pages/ErrorPage";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -40,6 +43,7 @@ function App() {
       <AuthProvider>
         <NotificationProvider>
           <BrowserRouter>
+            <ToastContainer />
             <Routes>
               {/* Public routes */}
               <Route element={<AuthLayout />}>
@@ -53,10 +57,8 @@ function App() {
 
                 {/* Client Routes */}
                 <Route path={ROUTES.CLIENTS} element={<ClientList />} />
-                <Route
-                  path={`${ROUTES.CLIENTS}/:id`}
-                  element={<ClientDetail />}
-                />
+                <Route path="/clients/:id" element={<ClientDetails />} />
+                <Route path="/clients/:id/edit" element={<ClientEdit />} />
 
                 {/* Project Routes */}
                 <Route path={ROUTES.PROJECTS} element={<Projects />} />

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { createClient, updateClient } from "../api/clients";
+import { clientsApi } from "../api/clientsApi";
+import { toast } from "react-toastify";
 
 const ClientForm = ({ client = null, onSuccess, onCancel }) => {
   const [loading, setLoading] = useState(false);
@@ -34,49 +35,46 @@ const ClientForm = ({ client = null, onSuccess, onCancel }) => {
   } = useForm({
     defaultValues: client || {
       name: "",
-      contactPerson: "",
-      email: "",
-      phone: "",
+      contactName: "",
+      contactEmail: "",
+      contactPhone: "",
       industry: "",
       status: "active",
       address: "",
       website: "",
       gstin: "",
       pan: "",
-      description: "",
-      onboardingDate: new Date().toISOString().split("T")[0],
+      notes: "",
     },
   });
 
   useEffect(() => {
     if (client) {
-      // Format dates for form input
-      const formattedClient = {
-        ...client,
-        onboardingDate: client.onboardingDate
-          ? new Date(client.onboardingDate).toISOString().split("T")[0]
-          : "",
-      };
-      reset(formattedClient);
+      reset(client);
     }
   }, [client, reset]);
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (formData) => {
     setLoading(true);
     try {
       let result;
       if (isEditMode) {
-        result = await updateClient(client.id, data);
+        result = await clientsApi.updateClient(client._id, formData);
       } else {
-        result = await createClient(data);
+        result = await clientsApi.createClient(formData);
       }
 
-      setLoading(false);
-      if (onSuccess) onSuccess(result);
+      if (result.success) {
+        toast.success(`Client ${isEditMode ? 'updated' : 'created'} successfully`);
+        if (onSuccess) onSuccess(result.data);
+      } else {
+        throw new Error(result.error || `Failed to ${isEditMode ? 'update' : 'create'} client`);
+      }
     } catch (error) {
       console.error("Error saving client:", error);
+      toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'create'} client`);
+    } finally {
       setLoading(false);
-      // Handle error (e.g., show error message)
     }
   };
 
@@ -91,13 +89,13 @@ const ClientForm = ({ client = null, onSuccess, onCancel }) => {
           {/* Client Name */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Client Name
+              Client Name*
             </label>
             <input
               type="text"
               {...register("name", { required: "Client name is required" })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g. Reliance Industries"
+              placeholder="e.g. Acme Corporation"
             />
             {errors.name && (
               <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
@@ -111,59 +109,45 @@ const ClientForm = ({ client = null, onSuccess, onCancel }) => {
             </label>
             <input
               type="text"
-              {...register("contactPerson", {
-                required: "Contact person is required",
-              })}
+              {...register("contactName")}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g. Mukesh Patel"
+              placeholder="e.g. John Smith"
             />
-            {errors.contactPerson && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.contactPerson.message}
-              </p>
-            )}
           </div>
 
-          {/* Email */}
+          {/* Contact Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+              Contact Email*
             </label>
             <input
               type="email"
-              {...register("email", {
-                required: "Email is required",
+              {...register("contactEmail", {
+                required: "Contact email is required",
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                   message: "Invalid email address",
                 },
               })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g. contact@reliance.com"
+              placeholder="e.g. john@acme.com"
             />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.email.message}
-              </p>
+            {errors.contactEmail && (
+              <p className="mt-1 text-sm text-red-600">{errors.contactEmail.message}</p>
             )}
           </div>
 
-          {/* Phone */}
+          {/* Contact Phone */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone
+              Contact Phone
             </label>
             <input
               type="text"
-              {...register("phone", { required: "Phone number is required" })}
+              {...register("contactPhone")}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g. +91 98765 43210"
+              placeholder="e.g. +1 234 567 8900"
             />
-            {errors.phone && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.phone.message}
-              </p>
-            )}
           </div>
 
           {/* Industry */}
@@ -172,7 +156,7 @@ const ClientForm = ({ client = null, onSuccess, onCancel }) => {
               Industry
             </label>
             <select
-              {...register("industry", { required: "Industry is required" })}
+              {...register("industry")}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select industry</option>
@@ -182,11 +166,6 @@ const ClientForm = ({ client = null, onSuccess, onCancel }) => {
                 </option>
               ))}
             </select>
-            {errors.industry && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.industry.message}
-              </p>
-            )}
           </div>
 
           {/* Status */}
@@ -200,28 +179,7 @@ const ClientForm = ({ client = null, onSuccess, onCancel }) => {
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
-              <option value="onboarding">Onboarding</option>
-              <option value="pending">Pending</option>
             </select>
-          </div>
-
-          {/* Onboarding Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Onboarding Date
-            </label>
-            <input
-              type="date"
-              {...register("onboardingDate", {
-                required: "Onboarding date is required",
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {errors.onboardingDate && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.onboardingDate.message}
-              </p>
-            )}
           </div>
 
           {/* Website */}
@@ -231,10 +189,18 @@ const ClientForm = ({ client = null, onSuccess, onCancel }) => {
             </label>
             <input
               type="url"
-              {...register("website")}
+              {...register("website", {
+                pattern: {
+                  value: /^https?:\/\/.+/,
+                  message: "Please enter a valid URL starting with http:// or https://",
+                },
+              })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g. https://www.reliance.com"
+              placeholder="e.g. https://www.acme.com"
             />
+            {errors.website && (
+              <p className="mt-1 text-sm text-red-600">{errors.website.message}</p>
+            )}
           </div>
 
           {/* GSTIN */}
@@ -246,18 +212,15 @@ const ClientForm = ({ client = null, onSuccess, onCancel }) => {
               type="text"
               {...register("gstin", {
                 pattern: {
-                  value:
-                    /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
-                  message: "Invalid GSTIN format",
+                  value: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+                  message: "Please enter a valid GSTIN",
                 },
               })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="e.g. 27AAACR5055K1Z5"
             />
             {errors.gstin && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.gstin.message}
-              </p>
+              <p className="mt-1 text-sm text-red-600">{errors.gstin.message}</p>
             )}
           </div>
 
@@ -271,11 +234,11 @@ const ClientForm = ({ client = null, onSuccess, onCancel }) => {
               {...register("pan", {
                 pattern: {
                   value: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
-                  message: "Invalid PAN format",
+                  message: "Please enter a valid PAN",
                 },
               })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g. AAACR5055K"
+              placeholder="e.g. AAAAA0000A"
             />
             {errors.pan && (
               <p className="mt-1 text-sm text-red-600">{errors.pan.message}</p>
@@ -289,22 +252,22 @@ const ClientForm = ({ client = null, onSuccess, onCancel }) => {
             </label>
             <textarea
               {...register("address")}
-              rows="2"
+              rows="3"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Full address"
+              placeholder="Enter complete address"
             ></textarea>
           </div>
 
-          {/* Description */}
+          {/* Notes */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
+              Notes
             </label>
             <textarea
-              {...register("description")}
+              {...register("notes")}
               rows="3"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Additional information about the client..."
+              placeholder="Additional notes about the client"
             ></textarea>
           </div>
         </div>
@@ -322,11 +285,17 @@ const ClientForm = ({ client = null, onSuccess, onCancel }) => {
             disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300"
           >
-            {loading
-              ? "Saving..."
-              : isEditMode
-              ? "Update Client"
-              : "Add Client"}
+            {loading ? (
+              <span className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {isEditMode ? "Updating..." : "Creating..."}
+              </span>
+            ) : (
+              <span>{isEditMode ? "Update Client" : "Create Client"}</span>
+            )}
           </button>
         </div>
       </form>

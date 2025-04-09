@@ -1,9 +1,14 @@
 import api from "./axios";
 
 export const userApi = {
-    getAllUsers: async (params) => {
-        const response = await api.get('/users', {params});
-        return response.data;
+    getAllUsers: async (params = { page: 1, limit: 10 }) => {
+        const response = await api.get('/users', { params });
+        return {
+            data: response.data.data,
+            total: response.data.total,
+            pagination: response.data.pagination,
+            count: response.data.count
+        };
     },
 
     getUserById: async (id) => {

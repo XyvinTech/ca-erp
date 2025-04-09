@@ -7,7 +7,7 @@ export const authApi = {
     },
 
     logout: async () => {
-        const response = await api.post('/auth/logout');
+        const response = await api.get('/auth/logout');
         localStorage.removeItem('auth_token');
         return response.data;
     },

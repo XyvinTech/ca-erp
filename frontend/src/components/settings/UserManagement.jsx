@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { ROLES } from "../../config/constants";
 import UserForm from "./UserForm";
-import dummyUsers from "../../dummyData/users";
+import { userApi } from "../../api/userApi";
+import { toast } from "react-toastify";
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -11,55 +12,81 @@ const UserManagement = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0
+  });
+
+  const loadUsers = async (page = 1) => {
+    setLoading(true);
+    try {
+      const response = await userApi.getAllUsers({
+        page,
+        limit: pagination.limit
+      });
+      setUsers(response.data);
+      setPagination({
+        ...pagination,
+        page,
+        total: response.total,
+      });
+      setError(null);
+    } catch (error) {
+      console.error("Failed to load users:", error);
+      const errorMessage = error.response?.data?.error || error.message || "Failed to load users";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Load users on component mount
-    const loadUsers = async () => {
-      setLoading(true);
-      try {
-        // In a real app, this would be an API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        setUsers(dummyUsers);
-        setLoading(false);
-      } catch (error) {
-        console.error("Failed to load users:", error);
-        setError("Failed to load users. Please try again.");
-        setLoading(false);
-      }
-    };
-
-    loadUsers();
+    loadUsers(pagination.page);
   }, []);
 
-  const handleAddUser = (newUser) => {
-    // Add an ID and joined date to the new user
-    const userWithId = {
-      ...newUser,
-      id: Math.max(0, ...users.map((u) => u.id)) + 1,
-      joinedAt: new Date().toISOString().split("T")[0],
-    };
-
-    setUsers([...users, userWithId]);
-    setShowAddModal(false);
-    setSuccessMessage("User added successfully!");
-    setTimeout(() => setSuccessMessage(""), 3000);
+  const handlePageChange = (newPage) => {
+    loadUsers(newPage);
   };
 
-  const handleEditUser = (updatedUser) => {
-    setUsers(
-      users.map((user) => (user.id === updatedUser.id ? updatedUser : user))
-    );
-    setShowEditModal(false);
-    setSuccessMessage("User updated successfully!");
-    setTimeout(() => setSuccessMessage(""), 3000);
+  const handleAddUser = async (userData) => {
+    try {
+      await userApi.createUser(userData);
+      toast.success("User added successfully!");
+      await loadUsers(); // Reload the users list
+      setShowAddModal(false);
+    } catch (error) {
+      console.error("Failed to add user:", error);
+      const errorMessage = error.response?.data?.error || error.message || "Failed to add user";
+      toast.error(errorMessage);
+    }
   };
 
-  const handleDeleteUser = () => {
-    setUsers(users.filter((user) => user.id !== currentUser.id));
-    setShowDeleteModal(false);
-    setSuccessMessage("User deleted successfully!");
-    setTimeout(() => setSuccessMessage(""), 3000);
+  const handleEditUser = async (userData) => {
+    try {
+      await userApi.updateUser(userData._id, userData);
+      toast.success("User updated successfully!");
+      await loadUsers(); // Reload the users list
+      setShowEditModal(false);
+    } catch (error) {
+      console.error("Failed to update user:", error);
+      const errorMessage = error.response?.data?.error || error.message || "Failed to update user";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    try {
+      await userApi.deleteUser(currentUser._id);
+      toast.success("User deleted successfully!");
+      await loadUsers(); // Reload the users list
+      setShowDeleteModal(false);
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      const errorMessage = error.response?.data?.error || error.message || "Failed to delete user";
+      toast.error(errorMessage);
+    }
   };
 
   const openEditModal = (user) => {
@@ -87,6 +114,9 @@ const UserManagement = () => {
     }
   };
 
+  const totalPages = Math.ceil(pagination.total / pagination.limit);
+  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -100,7 +130,7 @@ const UserManagement = () => {
       <div className="bg-red-50 p-4 rounded-md">
         <p className="text-red-700">{error}</p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={loadUsers}
           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
           Try Again
@@ -120,13 +150,6 @@ const UserManagement = () => {
           Add User
         </button>
       </div>
-
-      {/* Success Message */}
-      {successMessage && (
-        <div className="mb-4 bg-green-50 p-4 rounded-md">
-          <p className="text-green-700">{successMessage}</p>
-        </div>
-      )}
 
       {/* Users Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -161,7 +184,7 @@ const UserManagement = () => {
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               >
-                Joined
+                Status
               </th>
               <th
                 scope="col"
@@ -173,7 +196,7 @@ const UserManagement = () => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {users.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
+              <tr key={user._id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10">
@@ -214,8 +237,16 @@ const UserManagement = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {user.department}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(user.joinedAt).toLocaleDateString()}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      user.status === "active"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {user.status}
+                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
@@ -235,6 +266,106 @@ const UserManagement = () => {
             ))}
           </tbody>
         </table>
+
+        {/* Pagination */}
+        <div className="px-6 py-4 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+                  pagination.page === 1
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "text-blue-600 hover:text-blue-900 border border-gray-300"
+                }`}
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page === totalPages}
+                className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+                  pagination.page === totalPages
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "text-blue-600 hover:text-blue-900 border border-gray-300"
+                }`}
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing{" "}
+                  <span className="font-medium">
+                    {(pagination.page - 1) * pagination.limit + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-medium">
+                    {Math.min(pagination.page * pagination.limit, pagination.total)}
+                  </span>{" "}
+                  of <span className="font-medium">{pagination.total}</span> results
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => handlePageChange(1)}
+                    disabled={pagination.page === 1}
+                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border text-sm font-medium ${
+                      pagination.page === 1
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
+                    }`}
+                  >
+                    <span className="sr-only">First</span>
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                  
+                  {pages.map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        page === pagination.page
+                          ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                          : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => handlePageChange(pagination.page + 1)}
+                    disabled={pagination.page === totalPages}
+                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border text-sm font-medium ${
+                      pagination.page === totalPages
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
+                    }`}
+                  >
+                    <span className="sr-only">Next</span>
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Add User Modal */}

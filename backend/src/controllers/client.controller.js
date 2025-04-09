@@ -14,8 +14,6 @@ exports.getClients = async (req, res, next) => {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 10;
         const startIndex = (page - 1) * limit;
-        const endIndex = page * limit;
-        const total = await Client.countDocuments();
 
         // Filtering
         const filter = {};
@@ -50,39 +48,34 @@ exports.getClients = async (req, res, next) => {
             sort.createdAt = -1;
         }
 
-        // Query with filters and sort
+        // Get total count
+        const total = await Client.countDocuments(filter);
+
+        // Execute query
         const clients = await Client.find(filter)
+            .sort(sort)
             .skip(startIndex)
             .limit(limit)
-            .sort(sort)
-            .populate({
-                path: 'createdBy',
-                select: 'name email'
-            });
+            .lean();
 
-        // Pagination result
-        const pagination = {};
-
-        if (endIndex < total) {
-            pagination.next = {
-                page: page + 1,
-                limit,
-            };
-        }
-
-        if (startIndex > 0) {
-            pagination.prev = {
-                page: page - 1,
-                limit,
-            };
-        }
+        // Get unique industries and statuses for filters
+        const industries = await Client.distinct('industry');
+        const statuses = await Client.distinct('status');
 
         res.status(200).json({
             success: true,
-            count: clients.length,
-            pagination,
-            total,
             data: clients,
+            total,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
+            },
+            filters: {
+                industries,
+                statuses
+            }
         });
     } catch (error) {
         next(error);

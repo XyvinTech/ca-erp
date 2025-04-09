@@ -52,16 +52,31 @@ const UserForm = ({ user = null, onSubmit, onCancel }) => {
         response = await userApi.updateUser(user._id, updateData);
         toast.success("User updated successfully");
       } else {
-        // Create new user
+        // Create new user - ensure password is included for new users
+        if (!data.password) {
+          throw new Error("Password is required for new users");
+        }
+        // Remove confirmPassword from the data sent to API
         const { confirmPassword, ...createData } = data;
+        
+        // Ensure role is set if not provided
+        if (!createData.role) {
+          createData.role = ROLES.STAFF;
+        }
+        
         response = await userApi.createUser(createData);
         toast.success("User created successfully");
       }
       
-      onSubmit(response);
+      if (response?.data) {
+        onSubmit(response.data);
+      } else {
+        throw new Error("Invalid response from server");
+      }
     } catch (error) {
       console.error("Error saving user:", error);
-      toast.error(error.message || "Failed to save user. Please try again.");
+      const errorMessage = error.response?.data?.error || error.message || "Failed to save user. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -212,9 +227,15 @@ const UserForm = ({ user = null, onSubmit, onCancel }) => {
                   {...register("password", {
                     required: "Password is required",
                     minLength: {
-                      value: 8,
-                      message: "Password must be at least 8 characters",
+                      value: 6,
+                      message: "Password must be at least 6 characters",
                     },
+                    validate: (value) => {
+                      if (!isEditMode && !value) {
+                        return "Password is required for new users";
+                      }
+                      return true;
+                    }
                   })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />

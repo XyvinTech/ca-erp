@@ -40,6 +40,17 @@ const validate = (schema) => {
 
 // User validation schemas
 const userValidation = {
+    create: Joi.object({
+        body: Joi.object({
+            name: Joi.string().max(50).required(),
+            email: Joi.string().email().required(),
+            password: Joi.string().min(6).required(),
+            role: Joi.string().valid('admin', 'manager', 'staff', 'finance'),
+            department: Joi.string().max(50),
+            phone: Joi.string().max(20),
+        }),
+    }),
+
     register: Joi.object({
         body: Joi.object({
             name: Joi.string().max(50).required(),

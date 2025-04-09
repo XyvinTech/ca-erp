@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { fetchClients } from "../api/clients";
+import { clientsApi } from "../api/clientsApi";
 import CreateClientModal from "../components/CreateClientModal";
+import { toast } from "react-toastify";
 
 // Status badge component
 const StatusBadge = ({ status }) => {
@@ -42,15 +43,15 @@ const ClientCard = ({ client }) => {
 
   return (
     <Link
-      to={`/clients/${client.id}`}
+      to={`/clients/${client._id}`}
       className="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
     >
       <div className="p-5">
         <div className="flex items-center">
           <div className="flex-shrink-0">
-            {client.avatar ? (
+            {client.logo ? (
               <img
-                src={client.avatar}
+                src={client.logo}
                 alt={client.name}
                 className="w-12 h-12 rounded-full"
               />
@@ -67,26 +68,28 @@ const ClientCard = ({ client }) => {
               </h3>
               <StatusBadge status={client.status} />
             </div>
-            <p className="mt-1 text-sm text-gray-600">{client.industry}</p>
+            <p className="mt-1 text-sm text-gray-600">{client.industry || 'N/A'}</p>
           </div>
         </div>
         <div className="mt-4 border-t border-gray-100 pt-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-gray-500">Contact Person</p>
-              <p className="font-medium">{client.contactPerson}</p>
+              <p className="font-medium">{client.contactName || 'N/A'}</p>
             </div>
             <div>
               <p className="text-gray-500">Email</p>
-              <p className="font-medium truncate">{client.email}</p>
+              <p className="font-medium truncate">{client.contactEmail}</p>
             </div>
             <div>
               <p className="text-gray-500">Phone</p>
-              <p className="font-medium">{client.phone}</p>
+              <p className="font-medium">{client.contactPhone || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-gray-500">Projects</p>
-              <p className="font-medium">{client.projectCount || 0}</p>
+              <p className="text-gray-500">Created</p>
+              <p className="font-medium">
+                {new Date(client.createdAt).toLocaleDateString()}
+              </p>
             </div>
           </div>
         </div>
@@ -104,119 +107,95 @@ const ClientList = () => {
   const [sortOrder, setSortOrder] = useState("asc");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // State for pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit] = useState(10);
+
   // State for clients data
-  const [clientsData, setClientsData] = useState(null);
+  const [clientsData, setClientsData] = useState({
+    clients: [],
+    total: 0,
+    industries: [],
+    statuses: []
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const location = useLocation();
 
   // Fetch clients data
-  useEffect(() => {
-    const loadClients = async () => {
-      try {
-        setLoading(true);
-        const data = await fetchClients();
-        setClientsData(data);
-        setLoading(false);
-      } catch (err) {
-        console.error("Failed to fetch clients:", err);
-        setError("Failed to load clients. Please try again later.");
-        setLoading(false);
-      }
-    };
+  const loadClients = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
+      // Prepare query parameters
+      const params = {
+        page: currentPage,
+        limit,
+        sort: `${sortOrder === 'desc' ? '-' : ''}${sortBy}`,
+      };
+
+      // Add filters if they are set
+      if (searchQuery) params.search = searchQuery;
+      if (statusFilter !== 'all') params.status = statusFilter;
+      if (industryFilter !== 'all') params.industry = industryFilter;
+
+      const response = await clientsApi.getAllClients(params);
+      
+      if (response.success) {
+        setClientsData(prevData => ({
+          ...prevData,
+          clients: response.data,
+          total: response.total,
+          industries: response.filters?.industries || [],
+          statuses: response.filters?.statuses || []
+        }));
+      } else {
+        throw new Error(response.error || 'Failed to fetch clients');
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch clients:", err);
+      setError(err.message || "Failed to load clients. Please try again later.");
+      setLoading(false);
+      toast.error(err.message || "Failed to load clients");
+    }
+  };
+
+  // Fetch clients when filters, sorting, or pagination changes
+  useEffect(() => {
     loadClients();
-  }, []);
+  }, [currentPage, limit, searchQuery, statusFilter, industryFilter, sortBy, sortOrder]);
 
   // Check for success message from redirect
   useEffect(() => {
     if (location.state?.message) {
-      // Here you would typically show a toast notification
-      console.log(location.state.message);
-
-      // Clear the message from location state
+      toast.success(location.state.message);
       window.history.replaceState({}, document.title);
     }
   }, [location]);
 
   const handleClientCreated = (newClient) => {
-    setClientsData((prevData) => ({
+    setClientsData(prevData => ({
       ...prevData,
-      clients: [...prevData.clients, newClient],
-      total: prevData.total + 1,
+      clients: [newClient, ...prevData.clients],
+      total: prevData.total + 1
     }));
-  };
-
-  // Filter and sort clients
-  const getFilteredAndSortedClients = () => {
-    if (!clientsData) return [];
-
-    // Filter clients
-    const filtered = clientsData.clients.filter((client) => {
-      // Search filter
-      if (
-        searchQuery &&
-        !client.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !client.contactPerson
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase()) &&
-        !client.email.toLowerCase().includes(searchQuery.toLowerCase())
-      ) {
-        return false;
-      }
-
-      // Status filter
-      if (statusFilter !== "all" && client.status !== statusFilter) {
-        return false;
-      }
-
-      // Industry filter
-      if (industryFilter !== "all" && client.industry !== industryFilter) {
-        return false;
-      }
-
-      return true;
-    });
-
-    // Sort clients
-    return [...filtered].sort((a, b) => {
-      let comparison = 0;
-
-      switch (sortBy) {
-        case "name":
-          comparison = a.name.localeCompare(b.name);
-          break;
-        case "industry":
-          comparison = a.industry.localeCompare(b.industry);
-          break;
-        case "status":
-          comparison = a.status.localeCompare(b.status);
-          break;
-        case "projectCount":
-          comparison = (a.projectCount || 0) - (b.projectCount || 0);
-          break;
-        case "onboardingDate":
-          comparison = new Date(a.onboardingDate) - new Date(b.onboardingDate);
-          break;
-        default:
-          comparison = a.name.localeCompare(b.name);
-      }
-
-      return sortOrder === "asc" ? comparison : -comparison;
-    });
+    toast.success("Client created successfully");
+    setIsModalOpen(false);
   };
 
   // Handle sort change
   const handleSortChange = (field) => {
     if (sortBy === field) {
-      // Toggle sort order if clicking the same field
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
-      // Set new sort field and default to ascending
       setSortBy(field);
       setSortOrder("asc");
     }
+    setCurrentPage(1); // Reset to first page when sorting changes
   };
 
   // Reset filters
@@ -226,14 +205,20 @@ const ClientList = () => {
     setIndustryFilter("all");
     setSortBy("name");
     setSortOrder("asc");
+    setCurrentPage(1);
   };
 
-  // Get filtered and sorted clients
-  const filteredAndSortedClients = getFilteredAndSortedClients();
+  // Handle page change
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Calculate total pages
+  const totalPages = Math.ceil(clientsData.total / limit);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center min-h-[400px]">
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -245,7 +230,7 @@ const ClientList = () => {
         <div className="bg-red-50 p-4 rounded-md">
           <p className="text-red-700">{error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={loadClients}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             Try Again
@@ -374,14 +359,36 @@ const ClientList = () => {
       </div>
 
       {/* Results info */}
-      <div className="mb-4">
+      <div className="mb-4 flex justify-between items-center">
         <p className="text-sm text-gray-500">
-          Showing {filteredAndSortedClients.length} of {clientsData?.total || 0}{" "}
-          clients
+          Showing {clientsData.clients.length} of {clientsData.total} clients
         </p>
+        
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1 border rounded-md disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-600">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 border rounded-md disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
-      {filteredAndSortedClients.length === 0 ? (
+      {clientsData.clients.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <h2 className="text-xl font-medium text-gray-900 mb-4">
             No clients found
@@ -404,8 +411,8 @@ const ClientList = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredAndSortedClients.map((client) => (
-            <ClientCard key={client.id} client={client} />
+          {clientsData.clients.map((client) => (
+            <ClientCard key={client._id} client={client} />
           ))}
         </div>
       )}
