@@ -39,7 +39,7 @@ const mongoose = require('mongoose');
  *           type: string
  *           format: date
  *           description: Project start date
- *         endDate:
+ *         dueDate:
  *           type: string
  *           format: date
  *           description: Project end date or deadline
@@ -58,7 +58,7 @@ const mongoose = require('mongoose');
  *         team: ['60d0fe4f5311236168a109cc', '60d0fe4f5311236168a109cd']
  *         status: in-progress
  *         startDate: 2023-01-15
- *         endDate: 2023-03-31
+ *         dueDate: 2023-03-31
  *         budget: 25000
  */
 
@@ -89,6 +89,15 @@ const ProjectSchema = new mongoose.Schema(
                 ref: 'User',
             },
         ],
+        assignedTo: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User', 
+        },
+        createdBy:{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
         status: {
             type: String,
             enum: ['planning', 'in-progress', 'on-hold', 'completed', 'archived'],
@@ -97,7 +106,7 @@ const ProjectSchema = new mongoose.Schema(
         startDate: {
             type: Date,
         },
-        endDate: {
+        dueDate: {
             type: Date,
         },
         budget: {

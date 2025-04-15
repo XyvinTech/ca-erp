@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { fetchProjects } from "../api/projects";
+import { projectsApi } from "../api/projectsApi"
 import CreateProjectModal from "../components/CreateProjectModal";
 
 const statusColors = {
@@ -29,8 +30,12 @@ const Projects = () => {
   const loadProjects = async () => {
     try {
       setLoading(true);
-      const data = await fetchProjects();
-      setProjects(data.projects);
+      const data = await projectsApi.getAllProjects();
+      console.log(data, "all projects");
+      if (!data?.data || !Array.isArray(data.data)) {
+        throw new Error('Invalid API response format');
+      }
+      setProjects(data.data);
       setLoading(false);
     } catch (err) {
       console.error("Failed to fetch projects:", err);
@@ -152,7 +157,7 @@ const Projects = () => {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
             <Link
-              key={project.id}
+              key={project._id}
               to={`/projects/${project.id}`}
               className="block bg-white rounded-lg shadow overflow-hidden hover:shadow-md transition-shadow duration-300"
             >
@@ -167,9 +172,8 @@ const Projects = () => {
                     </p>
                   </div>
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      statusColors[project.status] || "bg-gray-100"
-                    }`}
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[project.status] || "bg-gray-100"
+                      }`}
                   >
                     {project.status}
                   </span>
@@ -203,39 +207,44 @@ const Projects = () => {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <div className="flex -space-x-2">
-                    {project.teamMembers.slice(0, 3).map((member) => (
-                      <div
-                        key={member.id}
-                        className="h-8 w-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center"
-                        title={member.name}
-                      >
-                        {member.avatar ? (
-                          <img
-                            src={member.avatar}
-                            alt={member.name}
-                            className="h-full w-full rounded-full"
-                          />
-                        ) : (
+
+                  {/* Add a check for project.teamMembers */}
+                  {project.teamMembers && project.teamMembers.length > 0 ? (
+                    <div className="flex -space-x-2">
+                      {project.teamMembers.slice(0, 3).map((member) => (
+                        <div
+                          key={member.id}
+                          className="h-8 w-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center"
+                          title={member.name}
+                        >
+                          {member.avatar ? (
+                            <img
+                              src={member.avatar}
+                              alt={member.name}
+                              className="h-full w-full rounded-full"
+                            />
+                          ) : (
+                            <span className="text-xs font-medium text-gray-600">
+                              {member.name.charAt(0)}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                      {project.teamMembers.length > 3 && (
+                        <div className="h-8 w-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center">
                           <span className="text-xs font-medium text-gray-600">
-                            {member.name.charAt(0)}
+                            +{project.teamMembers.length - 3}
                           </span>
-                        )}
-                      </div>
-                    ))}
-                    {project.teamMembers.length > 3 && (
-                      <div className="h-8 w-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center">
-                        <span className="text-xs font-medium text-gray-600">
-                          +{project.teamMembers.length - 3}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-500">No team members</div>
+                  )}
 
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      priorityColors[project.priority] || "bg-gray-100"
-                    }`}
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColors[project.priority] || "bg-gray-100"
+                      }`}
                   >
                     {project.priority}
                   </span>

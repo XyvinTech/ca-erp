@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { createProject, updateProject } from "../api/projects";
-import { fetchClients } from "../api/clients";
+import { projectsApi } from "../api";
+import { clientsApi } from "../api/clientsApi";
 
 const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
   const [clients, setClients] = useState([]);
@@ -16,7 +16,7 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
   } = useForm({
     defaultValues: project || {
       name: "",
-      client: { id: "", name: "" },
+      client: { id: "" },
       description: "",
       status: "Planning",
       priority: "Medium",
@@ -29,8 +29,9 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
   useEffect(() => {
     const loadClients = async () => {
       try {
-        const data = await fetchClients();
-        setClients(data.clients);
+        const response = await clientsApi.getAllClients();
+        console.log(response.data, "clients");
+        setClients(response.data);
       } catch (error) {
         console.error("Error loading clients:", error);
       }
@@ -50,6 +51,10 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
         dueDate: project.dueDate
           ? new Date(project.dueDate).toISOString().split("T")[0]
           : "",
+          client: {
+            id: project.client?._id || project.client?.id || "", // Handle _id or id
+            name: project.client?.name || "",
+          },
       };
       reset(formattedProject);
     }
@@ -58,22 +63,19 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
   const onSubmit = async (data) => {
     setLoading(true);
     try {
-      // Find the full client object from the selected ID
-      const selectedClient = clients.find((c) => c.id === data.client.id);
 
       const projectData = {
         ...data,
-        client: selectedClient
-          ? { id: selectedClient.id, name: selectedClient.name }
-          : data.client,
+        client: data.client.id,
+        status: data.status.toLowerCase(), // ensure status is one of the allowed values
         budget: data.budget ? Number(data.budget) : undefined,
       };
 
       let result;
       if (isEditMode) {
-        result = await updateProject(project.id, projectData);
+        result = await projectsApi.updateProject(project.id, projectData);
       } else {
-        result = await createProject(projectData);
+        result = await projectsApi.createProject(projectData);
       }
 
       setLoading(false);
@@ -117,7 +119,7 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
             >
               <option value="">Select a client</option>
               {clients.map((client) => (
-                <option key={client.id} value={client.id}>
+                <option key={client._id} value={client._id}>
                   {client.name}
                 </option>
               ))}
