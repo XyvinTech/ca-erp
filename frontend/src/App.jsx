@@ -1,3 +1,4 @@
+// src/App.js
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, NotificationProvider } from "./context/";
@@ -17,7 +18,6 @@ import ErrorPage from "./pages/ErrorPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -27,17 +27,7 @@ const queryClient = new QueryClient({
   },
 });
 
-// Define protected route
-const ProtectedRoute = ({ children }) => {
-  // For demo purposes, always authenticated
-  // In a real app, you would use authentication hooks to check authentication
-  const isAuthenticated = true;
-  return isAuthenticated ? children : <Navigate to="/login" />;
-};
-
 function App() {
-  // Not using authentication in this demo app
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -48,7 +38,6 @@ function App() {
               {/* Public routes */}
               <Route element={<AuthLayout />}>
                 <Route path={ROUTES.LOGIN} element={<Login />} />
-                {/* More auth routes like register, forgot-password, etc. */}
               </Route>
 
               {/* Protected routes */}
@@ -71,19 +60,13 @@ function App() {
                 <Route path={ROUTES.TASKS} element={<Tasks />} />
                 <Route path={`${ROUTES.TASKS}/:id`} element={<TaskDetail />} />
 
-                {/* Documents route */}
+                {/* Other Routes */}
                 <Route path={ROUTES.DOCUMENTS} element={<Documents />} />
-
-                {/* Finance route */}
                 <Route path={ROUTES.FINANCE} element={<Finance />} />
-
-                {/* Settings route */}
                 <Route path={ROUTES.SETTINGS} element={<Settings />} />
 
-                {/* Redirect to dashboard if at root */}
+                {/* Default and 404 */}
                 <Route path="/" element={<Navigate to={ROUTES.DASHBOARD} />} />
-
-                {/* 404 error page */}
                 <Route path="*" element={<ErrorPage />} />
               </Route>
             </Routes>

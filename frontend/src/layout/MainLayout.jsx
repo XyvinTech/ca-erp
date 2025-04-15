@@ -18,22 +18,21 @@ const MainLayout = () => {
   }
 
   if (!isAuthenticated) {
-    // Redirect to login if not authenticated
     return <Navigate to={ROUTES.LOGIN} replace />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
-      {/* Sidebar for mobile - controlled by state */}
+    <div className="flex h-screen overflow-hidden">
+      {/* Sidebar for mobile */}
       <div className="md:hidden">
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20"
+            className="fixed inset-0 z-20 bg-black bg-opacity-50"
             onClick={() => setSidebarOpen(false)}
           ></div>
         )}
         <div
-          className={`fixed inset-y-0 left-0 flex flex-col z-30 w-64 transition duration-300 transform bg-white border-r border-gray-200 ${
+          className={`fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -41,19 +40,15 @@ const MainLayout = () => {
         </div>
       </div>
 
-      {/* Sidebar for desktop - always visible */}
-      <div className="hidden md:flex md:flex-shrink-0">
-        <div className="flex flex-col w-64">
-          <div className="flex-1 flex flex-col min-h-0 border-r border-gray-200 bg-white">
-            <Sidebar />
-          </div>
-        </div>
+      {/* Fixed Sidebar for desktop */}
+      <div className="hidden md:block fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 z-20">
+        <Sidebar />
       </div>
 
       {/* Main content area */}
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 md:ml-64 overflow-hidden">
         <Header onOpenSidebar={() => setSidebarOpen(true)} />
-        <main className="flex-1 relative overflow-y-auto focus:outline-none">
+        <main className="flex-1 overflow-y-auto bg-gray-100">
           <div className="py-6">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
               <Outlet />
