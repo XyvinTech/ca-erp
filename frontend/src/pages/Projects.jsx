@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { fetchProjects } from "../api/projects";
-import { projectsApi } from "../api/projectsApi"
+import { projectsApi } from "../api/projectsApi";
 import CreateProjectModal from "../components/CreateProjectModal";
 
 const statusColors = {
@@ -24,9 +23,11 @@ const Projects = () => {
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [projectToDelete, setProjectToDelete] = useState(null);
 
   const location = useLocation();
 
+  // Function to load all projects
   const loadProjects = async () => {
     try {
       setLoading(true);
@@ -44,6 +45,25 @@ const Projects = () => {
     }
   };
 
+  // Function to delete a project
+  const deleteProject = async () => {
+    try {
+      // Delete the project via API
+      await projectsApi.deleteProject(projectToDelete.id);
+
+      // Re-fetch the projects to reflect the changes
+      loadProjects();  // Refresh the list of projects after deletion
+
+      // Set success message and reset the project to delete
+      setSuccessMessage("Project deleted successfully");
+      setProjectToDelete(null);
+    } catch (err) {
+      console.error("Error deleting project:", err);
+      setError("Failed to delete project. Please try again later.");
+    }
+  };
+
+  // Fetch projects when the component mounts
   useEffect(() => {
     loadProjects();
   }, []);
@@ -65,6 +85,7 @@ const Projects = () => {
     }
   }, [location]);
 
+  // Handle newly created project
   const handleProjectCreated = (newProject) => {
     setProjects((prevProjects) => [...prevProjects, newProject]);
     setSuccessMessage("Project created successfully");
@@ -130,12 +151,14 @@ const Projects = () => {
 
       <div className="mb-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          Create Project
-        </button>
+        <div className="flex space-x-4">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Create Project
+          </button>
+        </div>
       </div>
 
       {projects.length === 0 ? (
@@ -207,8 +230,6 @@ const Projects = () => {
                 </div>
 
                 <div className="flex items-center justify-between">
-
-                  {/* Add a check for project.teamMembers */}
                   {project.teamMembers && project.teamMembers.length > 0 ? (
                     <div className="flex -space-x-2">
                       {project.teamMembers.slice(0, 3).map((member) => (

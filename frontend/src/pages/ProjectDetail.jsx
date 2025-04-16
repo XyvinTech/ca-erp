@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   fetchProjectById,
   updateProject,
-  deleteProject,
+  deleteProject
 } from "../api/projects";
 import ProjectTasks from "../components/ProjectTasks";
 import ProjectForm from "../components/ProjectForm";

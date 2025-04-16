@@ -6,6 +6,7 @@ import { clientsApi } from "../api/clientsApi";
 const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
+  
   const isEditMode = !!project;
 
   const {
@@ -63,12 +64,13 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
   const onSubmit = async (data) => {
     setLoading(true);
     try {
-
+      // Ensure description is not empty
       const projectData = {
         ...data,
         client: data.client.id,
-        status: data.status.toLowerCase(), // ensure status is one of the allowed values
+        status: data.status.toLowerCase(),
         budget: data.budget ? Number(data.budget) : undefined,
+        description: data.description || "No description provided", // Default to placeholder if empty
       };
 
       let result;
@@ -211,10 +213,15 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
             Description
           </label>
           <textarea
-            {...register("description")}
+            {...register("description", { required: "Description is required" })}
             rows="4"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           ></textarea>
+          {errors.description && (
+            <p className="mt-1 text-sm text-red-600">
+              {errors.description.message}
+            </p>
+          )}
         </div>
 
         <div className="flex justify-end space-x-3">

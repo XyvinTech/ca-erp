@@ -3,77 +3,138 @@ import api from './axios';
 export const projectsApi = {
     // Project operations
     getAllProjects: async (params) => {
-        const response = await api.get('/projects', { params });
-        return response.data;
+        try {
+            const response = await api.get('/projects', { params });
+            return response.data;
+        } catch (error) {
+            console.error("Error fetching all projects:", error);
+            throw error;
+        }
     },
 
     getProjectById: async (id) => {
-        const response = await api.get(`/projects/${id}`);
-        return response.data;
+        try {
+            const response = await api.get(`/projects/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching project by ID (${id}):`, error);
+            throw error;
+        }
     },
 
     createProject: async (projectData) => {
-        const response = await api.post('/projects', projectData);
-        return response.data;
+        try {
+            const response = await api.post('/projects', projectData);
+            return response.data;
+        } catch (error) {
+            console.error("Error creating project:", error);
+            throw error;
+        }
     },
 
-    updateProject: async (id, projectData) => {
-        const response = await api.put(`/projects/${id}`, projectData);
-        return response.data;
+    // Update project status
+    updateProject: async (projectId, status) => {
+        try {
+            const response = await api.put(`/projects/${projectId}/status`, { status });
+            return response.data;
+        } catch (error) {
+            console.error(`Error updating project status for ID (${projectId}):`, error);
+            throw error;
+        }
     },
 
     deleteProject: async (id) => {
-        const response = await api.delete(`/projects/${id}`);
-        return response.data;
+        try {
+            const response = await api.delete(`/projects/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error deleting project ID (${id}):`, error);
+            throw error;
+        }
     },
 
     // Task operations
     getAllTasks: async (params) => {
-        const response = await api.get('/tasks', { params });
-        return response.data;
+        try {
+            const response = await api.get('/tasks', { params });
+            return response.data;
+        } catch (error) {
+            console.error("Error fetching all tasks:", error);
+            throw error;
+        }
     },
 
     getTaskById: async (id) => {
-        const response = await api.get(`/tasks/${id}`);
-        return response.data;
-    },
-
-    createTask: async (taskData) => {
-        const response = await api.post('/tasks', taskData);
-        return response.data;
+        try {
+            const response = await api.get(`/tasks/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching task by ID (${id}):`, error);
+            throw error;
+        }
     },
 
     updateTask: async (id, taskData) => {
-        const response = await api.put(`/tasks/${id}`, taskData);
-        return response.data;
+        try {
+            const response = await api.put(`/tasks/${id}`, taskData);
+            return response.data;
+        } catch (error) {
+            console.error(`Error updating task ID (${id}):`, error);
+            throw error;
+        }
     },
 
     deleteTask: async (id) => {
-        const response = await api.delete(`/tasks/${id}`);
-        return response.data;
+        try {
+            const response = await api.delete(`/tasks/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error deleting task ID (${id}):`, error);
+            throw error;
+        }
     },
 
     // Project tasks operations
     getProjectTasks: async (projectId, params) => {
-        const response = await api.get(`/projects/${projectId}/tasks`, { params });
-        return response.data;
+        try {
+            const response = await api.get(`/projects/${projectId}/tasks`, { params });
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching tasks for project ID (${projectId}):`, error);
+            throw error;
+        }
     },
 
     // Task status update
     updateTaskStatus: async (id, status) => {
-        const response = await api.patch(`/tasks/${id}/status`, { status });
-        return response.data;
+        try {
+            const response = await api.patch(`/tasks/${id}/status`, { status });
+            return response.data;
+        } catch (error) {
+            console.error(`Error updating task status for ID (${id}):`, error);
+            throw error;
+        }
     },
 
     // Task assignment
     assignTask: async (taskId, userId) => {
-        const response = await api.post(`/tasks/${taskId}/assign`, { userId });
-        return response.data;
+        try {
+            const response = await api.post(`/tasks/${taskId}/assign`, { userId });
+            return response.data;
+        } catch (error) {
+            console.error(`Error assigning task ID (${taskId}) to user ID (${userId}):`, error);
+            throw error;
+        }
     },
 
     // Task approval
     approveTask: async (taskId, approvalData) => {
-        const response = await api.post(`/tasks/${taskId}/approve`, approvalData);
-        return response.data;
+        try {
+            const response = await api.post(`/tasks/${taskId}/approve`, approvalData);
+            return response.data;
+        } catch (error) {
+            console.error(`Error approving task ID (${taskId}):`, error);
+            throw error;
+        }
     },
-}; 
+};

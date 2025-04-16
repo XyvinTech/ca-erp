@@ -331,38 +331,37 @@ exports.getProjectTasks = async (req, res, next) => {
  */
 exports.updateProjectStatus = async (req, res, next) => {
     try {
-        const { status } = req.body;
+        const { id } = req.params;
+        const { status } = req.body; // Assuming status is passed in the request body
 
-        if (!status) {
-            return next(new ErrorResponse('Please provide a status', 400));
+        // Check if the status is valid (you can add additional checks here)
+        const validStatuses = ['Not Started', 'In Progress', 'Completed'];
+        if (!validStatuses.includes(status)) {
+            return next(new ErrorResponse('Invalid status value', 400));
         }
 
-        let project = await Project.findById(req.params.id);
+        // Find project by ID
+        let project = await Project.findById(id);
 
         if (!project) {
-            return next(new ErrorResponse(`Project not found with id of ${req.params.id}`, 404));
+            return next(new ErrorResponse(`Project not found with id of ${id}`, 404));
         }
 
-        // Check access - only admin and assigned users can update
+        // Check if the user is authorized to update the project (admin or assigned user)
         if (req.user.role !== 'admin' && project.assignedTo.toString() !== req.user.id.toString()) {
-            return next(new ErrorResponse(`User not authorized to update this project`, 403));
+            return next(new ErrorResponse('User not authorized to update this project', 403));
         }
 
-        project = await Project.findByIdAndUpdate(
-            req.params.id,
-            {
-                status,
-                updatedBy: req.user.id
-            },
-            {
-                new: true,
-                runValidators: true,
-            }
-        );
+        // Update the project status
+        project.status = status;
 
-        // Log the status update
-        logger.info(`Project status updated for ${project.name} (${project._id}) to ${status} by ${req.user.name} (${req.user._id})`);
+        // Save the updated project
+        project = await project.save();
 
+        // Log the project status update
+        logger.info(`Project status updated: ${project.name} (${project._id}) to ${status} by ${req.user.name} (${req.user._id})`);
+
+        // Send success response
         res.status(200).json({
             success: true,
             data: project,
@@ -370,4 +369,4 @@ exports.updateProjectStatus = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-}; 
+};
