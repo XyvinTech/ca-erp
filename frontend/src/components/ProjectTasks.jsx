@@ -51,7 +51,7 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
     };
 
     loadTasks();
-  }, [projectId, initialTasks]);
+  }, [projectId]); // Removed initialTasks from dependencies to avoid unnecessary reruns
 
   const handleTaskCreated = (newTask) => {
     setTasks((prevTasks) => [...prevTasks, newTask]);
@@ -153,9 +153,9 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
                       {task.title}
                     </Link>
                     <div className="mt-1 flex flex-wrap gap-1">
-                      {task.tags?.map((tag) => (
+                      {(task.tags || []).map((tag, index) => (
                         <span
-                          key={tag}
+                          key={index}
                           className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
                         >
                           {tag}

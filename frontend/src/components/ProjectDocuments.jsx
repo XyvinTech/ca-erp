@@ -107,14 +107,11 @@ const ProjectDocuments = ({ projectId }) => {
     const fetchDocuments = async () => {
       try {
         setLoading(true);
-        // In a real app, use the API call
-        // const data = await documentsApi.getProjectDocuments(projectId);
-
-        // For demo, filter documents from dummy data
-        const projectDocs = allDocuments.filter(
-          (doc) => doc.projectId === parseInt(projectId)
-        );
-        setDocuments(projectDocs);
+  
+        // ✅ Real API call
+        const data = await documentsApi.getProjectDocuments(projectId);
+        setDocuments(data);
+  
         setLoading(false);
       } catch (err) {
         console.error("Failed to load project documents:", err);
@@ -122,9 +119,10 @@ const ProjectDocuments = ({ projectId }) => {
         setLoading(false);
       }
     };
-
+  
     fetchDocuments();
   }, [projectId]);
+  
 
   const handleDeleteDocument = async (documentId) => {
     try {

@@ -43,9 +43,10 @@ const Tasks = () => {
         fetchProjects(),
       ]);
 
-      setTasks(tasksData.tasks);
-      setProjects(projectsData.projects);
-      setTeamMembers(tasksData.team || []);
+      // Ensure data is an array before setting state
+      setTasks(Array.isArray(tasksData.tasks) ? tasksData.tasks : []);
+      setProjects(Array.isArray(projectsData.projects) ? projectsData.projects : []);
+      setTeamMembers(Array.isArray(tasksData.team) ? tasksData.team : []);
       setLoading(false);
     } catch (err) {
       console.error("Failed to fetch data:", err);
@@ -99,7 +100,7 @@ const Tasks = () => {
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white text-black">
         <div className="bg-red-50 p-4 rounded-md">
           <p className="text-red-700">{error}</p>
           <button
@@ -114,7 +115,7 @@ const Tasks = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white text-black">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900 mb-4 sm:mb-0">Tasks</h1>
         <button
@@ -126,7 +127,7 @@ const Tasks = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="bg-white rounded-lg shadow p-6 mb-6 bg-white text-black">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
           <h2 className="text-lg font-medium text-gray-900 mb-2 md:mb-0">
             Filters
@@ -139,7 +140,7 @@ const Tasks = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-white text-black">
           <div>
             <label
               htmlFor="status"
@@ -199,7 +200,7 @@ const Tasks = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Projects</option>
-              {projects.map((project) => (
+              {projects && Array.isArray(projects) && projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
                 </option>
@@ -222,7 +223,7 @@ const Tasks = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Team Members</option>
-              {teamMembers.map((member) => (
+              {teamMembers && Array.isArray(teamMembers) && teamMembers.map((member) => (
                 <option key={member.id} value={member.id}>
                   {member.name}
                 </option>
@@ -256,119 +257,48 @@ const Tasks = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Task
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                    Task Name
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Project
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
                     Status
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
                     Priority
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Assigned To
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                    Project
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Due Date
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                    Assigned To
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200">
                 {filteredTasks.map((task) => (
-                  <tr key={task.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Link
-                        to={`/tasks/${task.id}`}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        {task.title}
-                      </Link>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {task.tags?.map((tag) => (
-                          <span
-                            key={tag}
-                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
+                  <tr key={task.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {task.name}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {task.project ? (
-                        <Link
-                          to={`/projects/${task.project.id}`}
-                          className="text-gray-900 hover:text-blue-600"
-                        >
-                          {task.project.name}
-                        </Link>
-                      ) : (
-                        <span className="text-gray-500">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          statusColors[task.status] || "bg-gray-100"
-                        }`}
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${statusColors[task.status]}`}
                       >
                         {task.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          priorityColors[task.priority] || "bg-gray-100"
-                        }`}
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${priorityColors[task.priority]}`}
                       >
                         {task.priority}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
-                          {task.assignedTo?.avatar ? (
-                            <img
-                              className="h-8 w-8 rounded-full"
-                              src={task.assignedTo.avatar}
-                              alt=""
-                            />
-                          ) : (
-                            <span className="text-sm font-medium text-gray-500">
-                              {task.assignedTo?.name?.charAt(0)}
-                            </span>
-                          )}
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm text-gray-900">
-                            {task.assignedTo?.name}
-                          </p>
-                        </div>
-                      </div>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {task.project?.name || "No Project"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(task.dueDate).toLocaleDateString()}
+                      {task.assignedTo?.name || "Unassigned"}
                     </td>
                   </tr>
                 ))}
@@ -378,11 +308,8 @@ const Tasks = () => {
         </div>
       )}
 
-      <CreateTaskModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onTaskCreated={handleTaskCreated}
-      />
+      {/* Modal */}
+      <CreateTaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onTaskCreated={handleTaskCreated} />
     </div>
   );
 };

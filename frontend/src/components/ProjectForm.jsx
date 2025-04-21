@@ -68,13 +68,21 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
       const projectData = {
         ...data,
         client: data.client.id,
-        status: data.status.toLowerCase(),
+        status: data.status ? data.status.toLowerCase() : "planning", // Ensure the status is lowercase
         budget: data.budget ? Number(data.budget) : undefined,
         description: data.description || "No description provided", // Default to placeholder if empty
       };
 
+      console.log("Project Data:", projectData);  // Log to verify the data
+
+      // Validate status field
+      if (!["planning", "in-progress", "completed", "archived"].includes(projectData.status)) {
+        console.error(`Invalid status: ${projectData.status}`);
+        return;
+      }
+
       let result;
-      if (isEditMode) {
+      if (isEditMode && project?.id) {
         result = await projectsApi.updateProject(project.id, projectData);
       } else {
         result = await projectsApi.createProject(projectData);
@@ -83,7 +91,7 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
       setLoading(false);
       if (onSuccess) onSuccess(result);
     } catch (error) {
-      console.error("Error saving project:", error);
+      console.error("Error saving project:", error.response ? error.response.data : error);
       setLoading(false);
       // Handle error (e.g., show error message)
     }
@@ -141,11 +149,10 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
               {...register("status")}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="Planning">Planning</option>
-              <option value="In Progress">In Progress</option>
-              <option value="On Hold">On Hold</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
+              <option value="planning">Planning</option>
+              <option value="in-progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="archived">Archived</option>
             </select>
           </div>
 
@@ -157,9 +164,9 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
               {...register("priority")}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
             </select>
           </div>
 
