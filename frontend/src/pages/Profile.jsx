@@ -24,10 +24,14 @@ const Profile = () => {
     const fetchUser = async () => {
       try {
         const user = await userApi.getUserById(userId);
+        console.log(user)
         setProfileData(user.data);
-        if (user.data?.avatarUrl) setProfileImage(user.data.avatarUrl);
+        if (user.data.avatar) {
+          const fullUrl = `${import.meta.env.VITE_BASE_URL}${user.data.avatar}`;
+          setProfileImage(fullUrl);
+          console.log(profileImage)
+        }
       } catch (error) {
-        toast.error("Failed to fetch user data.");
         console.error("Failed to fetch user:", error);
       }
     };
