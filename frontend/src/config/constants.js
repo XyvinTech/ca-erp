@@ -37,9 +37,7 @@ export const ROUTES = {
     PROFILE: '/profile',
     SETTINGS: '/settings',
     FINANCE: '/finance',
-<<<<<<< HEAD
-=======
+
     PROFILES: '/profile',
 
->>>>>>> 2f83ccc (first commit)
 }; 

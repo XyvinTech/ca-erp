@@ -6,24 +6,16 @@ require('dotenv').config();
 // Protect routes middleware
 exports.protect = async (req, res, next) => {
     let token;
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 2f83ccc (first commit)
     if (
         req.headers.authorization &&
         req.headers.authorization.startsWith('Bearer')
     ) {
-<<<<<<< HEAD
-        // Extract token from Bearer token in header
-        token = req.headers.authorization.split(' ')[1];
-=======
      
         // Extract token from Bearer token in header
         token = req.headers.authorization.split(' ')[1];
       
->>>>>>> 2f83ccc (first commit)
+
     } else if (req.cookies && req.cookies.token) {
         // Or get from cookie
         token = req.cookies.token;
@@ -31,27 +23,18 @@ exports.protect = async (req, res, next) => {
 
     // Check if token exists
     if (!token) {
-<<<<<<< HEAD
-=======
-       
->>>>>>> 2f83ccc (first commit)
+
         return next(new ErrorResponse('Not authorized to access this route', 401));
     }
 
     try {
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-<<<<<<< HEAD
 
-        // Get user from the token
-        req.user = await User.findById(decoded.id);
-
-=======
        
         // Get user from the token
         req.user = await User.findById(decoded.id);
-      
->>>>>>> 2f83ccc (first commit)
+
         if (!req.user) {
             return next(new ErrorResponse('User not found', 404));
         }
@@ -66,18 +49,12 @@ exports.protect = async (req, res, next) => {
 exports.authorize = (...roles) => {
     return (req, res, next) => {
         if (!req.user) {
-<<<<<<< HEAD
-=======
-          
->>>>>>> 2f83ccc (first commit)
+
             return next(new ErrorResponse('User not found', 404));
         }
 
         if (!roles.includes(req.user.role)) {
-<<<<<<< HEAD
-=======
-          
->>>>>>> 2f83ccc (first commit)
+
             return next(
                 new ErrorResponse(
                     `User role ${req.user.role} is not authorized to access this route`,

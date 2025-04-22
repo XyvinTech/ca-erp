@@ -70,10 +70,7 @@ exports.getUsers = async (req, res, next) => {
  */
 exports.getUser = async (req, res, next) => {
     try {
-<<<<<<< HEAD
-=======
         console.log( "654utityt7iiiiiiiiiiiiiiiiiiiii64646")
->>>>>>> 2f83ccc (first commit)
         const user = await User.findById(req.params.id);
 
         if (!user) {
