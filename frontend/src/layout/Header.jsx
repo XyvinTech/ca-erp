@@ -189,7 +189,7 @@ const Header = ({ onOpenSidebar }) => {
                     <span className="sr-only">Open user menu</span>
                     <Avatar
                       name={user?.name || "User"}
-                      src={user?.avatar}
+                      src={user?.avatar ? `${import.meta.env.VITE_BASE_URL}${user.avatar}` : undefined}
                       size="sm"
                     />
                   </button>

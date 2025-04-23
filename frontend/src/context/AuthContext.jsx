@@ -7,6 +7,7 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const {
+    setUser,
     user,
     isLoading,
     error,
@@ -23,6 +24,7 @@ export const AuthProvider = ({ children }) => {
   }, [checkAuth]);
 
   const value = {
+    setUser,
     user,
     isLoading,
     error,

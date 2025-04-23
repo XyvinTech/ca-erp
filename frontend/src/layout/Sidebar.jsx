@@ -130,11 +130,19 @@ const Sidebar = ({ onCloseMobile }) => {
         <div className="border-t border-gray-200 p-4">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
-                <span className="text-white font-medium text-sm">
-                  {user.name ? user.name.charAt(0) : "U"}
-                </span>
-              </div>
+              {user.avatar ? (
+                <img
+                  src={`${import.meta.env.VITE_BASE_URL}${user.avatar}`}
+                  alt="Avatar"
+                  className="h-8 w-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
+                  <span className="text-white font-medium text-sm">
+                    {user.name ? user.name.charAt(0) : "U"}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-700">
@@ -146,6 +154,7 @@ const Sidebar = ({ onCloseMobile }) => {
             </div>
           </div>
         </div>
+
       )}
     </div>
   );
