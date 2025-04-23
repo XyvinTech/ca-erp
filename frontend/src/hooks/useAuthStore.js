@@ -17,6 +17,7 @@ const useAuthStore = create((set, get) => ({
 
             // In a real app, this would call authApi.login()
             // For demo, we'll match against dummy data
+            
             const matchedUser = users.find(
                 user => user.email === credentials.email
             );
