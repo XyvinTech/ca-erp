@@ -69,7 +69,7 @@ exports.getProjects = async (req, res, next) => {
             })
             .populate({
                 path: 'assignedTo',
-                select: 'name email'
+                select: 'name email avatar'
             })
             .populate({
                 path: 'createdBy',
@@ -127,11 +127,11 @@ exports.getProject = async (req, res, next) => {
             })
             .populate({
                 path: 'assignedTo',
-                select: 'name email'
+                select: 'name email avatar'
             })
             .populate({
                 path: 'createdBy',
-                select: 'name email'
+                select: 'name email avatar'
             })
             .populate({
                 path: 'team',
@@ -349,7 +349,7 @@ exports.getProjectTasks = async (req, res, next) => {
             .sort({ dueDate: 1, priority: -1 })
             .populate({
                 path: 'assignedTo',
-                select: 'name email'
+                select: 'name email avatar'
             })
             .populate({
                 path: 'createdBy',

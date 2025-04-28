@@ -5,7 +5,7 @@ const CreateTaskModal = ({
   isOpen,
   onClose,
   onTaskCreated,
-  projectId = null,
+  projectId,
 }) => {
   const modalRef = useRef(null);
 
@@ -38,7 +38,7 @@ const CreateTaskModal = ({
         className="max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
       >
         <TaskForm
-          projectId={projectId}
+          projectIds={projectId}
           onSuccess={(task) => {
             onTaskCreated(task);
             onClose();

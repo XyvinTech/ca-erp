@@ -27,7 +27,7 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
   const [loading, setLoading] = useState(!initialTasks);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [reload, setReload] = useState(false); // NEW
   useEffect(() => {
     // If tasks were provided as props, use them
     // if (initialTasks) {
@@ -54,11 +54,13 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
 
 
     loadTasks();
-  }, [projectId]); // Removed initialTasks from dependencies to avoid unnecessary reruns
+  }, [projectId,reload]); // Removed initialTasks from dependencies to avoid unnecessary reruns
 
   const handleTaskCreated = (newTask) => {
-    setTasks((prevTasks) => [...prevTasks, newTask]);
-    if (onTaskCreated) onTaskCreated(newTask);
+    setIsModalOpen(false);  // Close modal after creating
+    setReload(true);  
+    // setTasks((prevTasks) => [...prevTasks, newTask]);
+    // if (onTaskCreated) onTaskCreated(newTask);
   };
 
   if (loading) {
@@ -190,7 +192,7 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
                         {task.assignedTo?.avatar ? (
                           <img
                             className="h-8 w-8 rounded-full"
-                            src={task.assignedTo.avatar}
+                            src={task?.assignedTo?.avatar ? `${import.meta.env.VITE_BASE_URL}${task.assignedTo.avatar}` : undefined}
                             alt=""
                           />
                         ) : (

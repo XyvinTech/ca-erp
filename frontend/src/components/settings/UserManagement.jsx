@@ -26,10 +26,15 @@ const UserManagement = () => {
         limit: pagination.limit
       });
       setUsers(response.data);
+      console.log(response.data);
+      
+      
+
       setPagination({
         ...pagination,
         page,
         total: response.total,
+
       });
       setError(null);
     } catch (error) {
@@ -203,8 +208,8 @@ const UserManagement = () => {
                       {user.avatar ? (
                         <img
                           className="h-10 w-10 rounded-full"
-                          src={user.avatar}
-                          alt=""
+                          src={`${import.meta.env.VITE_BASE_URL}${user.avatar}`}
+
                         />
                       ) : (
                         <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">

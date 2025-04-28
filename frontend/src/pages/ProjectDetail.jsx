@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { CiEdit } from "react-icons/ci";
+import { MdDelete } from "react-icons/md";
 import {
   fetchProjectById,
   updateProject,
@@ -40,6 +42,8 @@ const ProjectDetail = () => {
   const [reloadDocuments, setReloadDocuments] = useState(false);
   const [noteContent, setNoteContent] = useState(""); // State for the note content
   const [reloadProject, setReloadProject] = useState(false); 
+  const [editingNoteId, setEditingNoteId] = useState(null); // Track which note is being edited
+
   useEffect(() => {
     const loadProject = async () => {
       try {
@@ -102,28 +106,42 @@ const ProjectDetail = () => {
       setError("Note content cannot be empty.");
       return;
     }
-
-    // Simulate an API call to add the note
-    const newNote = {
-      content: noteContent,
-       // Replace with actual user if needed
-      createdAt: new Date().toISOString(),
-    };
-
+  
     try {
-      // Add the note to the project (simulate)
-      const updatedProject = { notes: [...project.notes, newNote] };
-      const updatedProj = await projectsApi.updateProject(project.id, updatedProject);
+      let updatedNotes;
+  
+      if (editingNoteId) {
+        // If editing, update the existing note
+        updatedNotes = project.notes.map((note) =>
+          note.id === editingNoteId ? { ...note, content: noteContent } : note
+        );
+      } else {
+        // Else, create a new note
+        const newNote = {
+          id: Math.random().toString(36).substr(2, 9), // generate random id (if no backend auto id)
+          content: noteContent,
+          createdAt: new Date().toISOString(),
+        };
+        updatedNotes = [...project.notes, newNote];
+      }
+  
+      const updatedProj = await projectsApi.updateProject(project.id, {
+        notes: updatedNotes,
+      });
+  
       setReloadProject(prev => !prev);
-
-      // Reset the note content and close the modal
+  
+      // Reset states after saving
       setNoteContent("");
+      setEditingNoteId(null);
       setIsAddNotesModalOpen(false);
+  
     } catch (err) {
-      console.error("Failed to add note:", err);
-      setError("Failed to add note. Please try again later.");
+      console.error("Failed to add/update note:", err);
+      setError("Failed to save note. Please try again later.");
     }
   };
+  
   const handleDeleteProject = async () => {
     try {
       setLoading(true);
@@ -156,6 +174,30 @@ const ProjectDetail = () => {
       alert("Error downloading document. Please try again.");
     }
   };
+  const handleEditNote = (note) => {
+  // You can open a modal and pre-fill noteContent for editing
+  setNoteContent(note.content);
+  setEditingNoteId(note.id); 
+  setIsAddNotesModalOpen(true);
+  // You could also store the editing note's ID separately if you want to distinguish between Add vs Edit mode
+};
+
+const handleDeleteNote = async (noteId) => {
+  if (!window.confirm("Are you sure you want to delete this note?")) return;
+
+  try {
+    const updatedNotes = project.notes.filter((n) => n.id !== noteId);
+    const updatedProj = await projectsApi.updateProject(project.id, {
+      notes: updatedNotes,
+    });
+    setReloadProject(prev => !prev);
+  } catch (err) {
+    console.error("Failed to delete note:", err);
+    setError("Failed to delete note. Please try again later.");
+  }
+};
+
+
 
 
   if (loading) {
@@ -502,12 +544,16 @@ const ProjectDetail = () => {
             <div>
               <div className="flex justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">Documents</h3>
+                {project.documents?.length > 0 ? (
+
                 <button
+
                   onClick={() => setIsAddDocumentModalOpen(true)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
                   Add Document
                 </button>
+                  ) :([])}
               </div>
               {project.documents?.length > 0 ? (
                 <div className="bg-gray-50 rounded-lg overflow-hidden">
@@ -556,7 +602,7 @@ const ProjectDetail = () => {
                   <p className="text-gray-500 mb-4">
                     No documents uploaded for this project yet.
                   </p>
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                  <button  onClick={() => setIsAddDocumentModalOpen(true)} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                     Upload Document
                   </button>
                 </div>
@@ -564,50 +610,72 @@ const ProjectDetail = () => {
             </div>
           )}
 
-          {activeTab === "notes" && (
-            
-              <div>
-                <div className="flex justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">Notes</h3>
-                  <button
-                    onClick={() => setIsAddNotesModalOpen(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Add Notes
-                  </button>
-                </div>
-              {project.notes?.length > 0 ? (
-                <div className="space-y-4">
-                  {project.notes.map((note) => (
-                    <div
-                      key={note.id}
-                      className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                    >
-                      <p className="text-sm text-gray-700">{note.content}</p>
-                      <div className="mt-2 flex items-center text-xs text-gray-500">
-                        <span className="font-medium text-gray-700 mr-2">
-                          {note.author.name}
-                        </span>
-                        <span>
-                          {new Date(note.createdAt).toLocaleDateString()} at{" "}
-                          {new Date(note.createdAt).toLocaleTimeString()}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-gray-50 rounded-lg p-8 text-center">
-                  <p className="text-gray-500 mb-4">
-                    No notes added for this project yet.
-                  </p>
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                    Add Note
-                  </button>
-                </div>
-              )}
+{activeTab === "notes" && (
+  <div>
+    <div className="flex justify-between mb-4">
+      <h3 className="text-lg font-medium text-gray-900">Notes</h3>
+      {project.notes?.length > 0 ? (
+      <button
+        onClick={() => setIsAddNotesModalOpen(true)}
+        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+      >
+        Add Note
+      </button>
+      ):([])}
+    </div>
+
+    {project.notes?.length > 0 ? (
+      <div className="space-y-4">
+        {project.notes.map((note) => (
+          <div
+            key={note.id}
+            className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+          >
+            <p className="text-sm text-gray-700">{note.content}</p>
+            <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center">
+                <span className="font-medium text-gray-700 mr-2">
+                  {note.author?.name || "Unknown Author"}
+                </span>
+                <span>
+                  {new Date(note.createdAt).toLocaleDateString()} at{" "}
+                  {new Date(note.createdAt).toLocaleTimeString()}
+                </span>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleEditNote(note)}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  <CiEdit />
+                </button>
+                <button
+                  onClick={() => handleDeleteNote(note.id)}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  <MdDelete />
+                </button>
+              </div>
             </div>
-          )}
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div className="bg-gray-50 rounded-lg p-8 text-center">
+        <p className="text-gray-500 mb-4">
+          No notes added for this project yet.
+        </p>
+        <button
+          onClick={() => setIsAddNotesModalOpen(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Add Note
+        </button>
+      </div>
+    )}
+  </div>
+)}
+
         </div>
       </div>
 
