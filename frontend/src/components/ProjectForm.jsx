@@ -6,7 +6,6 @@ import { clientsApi } from "../api/clientsApi";
 const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
-  
   const isEditMode = !!project;
 
   const {
@@ -15,12 +14,12 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
     formState: { errors },
     reset,
   } = useForm({
-    defaultValues: project || {
+    defaultValues: {
       name: "",
       client: { id: "" },
       description: "",
-      status: "Planning",
-      priority: "Medium",
+      status: "planning",
+      priority: "medium",
       startDate: "",
       dueDate: "",
       budget: "",
@@ -31,7 +30,6 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
     const loadClients = async () => {
       try {
         const response = await clientsApi.getAllClients();
-        console.log(response.data, "clients");
         setClients(response.data);
       } catch (error) {
         console.error("Error loading clients:", error);
@@ -42,8 +40,7 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
   }, []);
 
   useEffect(() => {
-    if (project) {
-      // Format dates for form input
+    if (project && clients.length > 0) {
       const formattedProject = {
         ...project,
         startDate: project.startDate
@@ -52,35 +49,37 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
         dueDate: project.dueDate
           ? new Date(project.dueDate).toISOString().split("T")[0]
           : "",
-          client: {
-            id: project.client?._id || project.client?.id || "", // Handle _id or id
-            name: project.client?.name || "",
-          },
+        client: {
+          id: String(project.client?._id || project.client?.id || ""),
+          name: project.client?.name || "",
+        },
+        priority: project.priority?.toLowerCase() || "medium",
       };
       reset(formattedProject);
     }
-  }, [project, reset]);
+  }, [project, clients, reset]);
 
   const onSubmit = async (data) => {
+    
     setLoading(true);
     try {
-      // Ensure description is not empty
       const projectData = {
-        ...data,
+      
         client: data.client.id,
-        status: data.status ? data.status.toLowerCase() : "planning", // Ensure the status is lowercase
+        status: data.status ? data.status.toLowerCase() : "planning",
         budget: data.budget ? Number(data.budget) : undefined,
-        description: data.description || "No description provided", // Default to placeholder if empty
+        priority: data.priority ? data.priority.toLowerCase() : "medium",
+        description: data.description || "No description provided",
+        name: data.name,
+        startDate: data.startDate,
+        dueDate: data.dueDate,
       };
 
-      console.log("Project Data:", projectData);  // Log to verify the data
-
-      // Validate status field
       if (!["planning", "in-progress", "completed", "archived"].includes(projectData.status)) {
         console.error(`Invalid status: ${projectData.status}`);
         return;
       }
-
+      
       let result;
       if (isEditMode && project?.id) {
         result = await projectsApi.updateProject(project.id, projectData);
@@ -89,11 +88,10 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
       }
 
       setLoading(false);
-      if (onSuccess) onSuccess(result);
+      if (onSuccess) onSuccess(result.data);
     } catch (error) {
       console.error("Error saving project:", error.response ? error.response.data : error);
       setLoading(false);
-      // Handle error (e.g., show error message)
     }
   };
 
@@ -129,15 +127,13 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
             >
               <option value="">Select a client</option>
               {clients.map((client) => (
-                <option key={client._id} value={client._id}>
+                <option key={client._id} value={String(client._id)}>
                   {client.name}
                 </option>
               ))}
             </select>
             {errors.client?.id && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.client.id.message}
-              </p>
+              <p className="mt-1 text-sm text-red-600">{errors.client.id.message}</p>
             )}
           </div>
 
@@ -180,9 +176,7 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {errors.startDate && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.startDate.message}
-              </p>
+              <p className="mt-1 text-sm text-red-600">{errors.startDate.message}</p>
             )}
           </div>
 
@@ -196,9 +190,7 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {errors.dueDate && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.dueDate.message}
-              </p>
+              <p className="mt-1 text-sm text-red-600">{errors.dueDate.message}</p>
             )}
           </div>
 
@@ -225,9 +217,7 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           ></textarea>
           {errors.description && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.description.message}
-            </p>
+            <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
           )}
         </div>
 
@@ -247,8 +237,8 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
             {loading
               ? "Saving..."
               : isEditMode
-              ? "Update Project"
-              : "Create Project"}
+                ? "Update Project"
+                : "Create Project"}
           </button>
         </div>
       </form>

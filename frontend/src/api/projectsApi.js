@@ -35,7 +35,7 @@ export const projectsApi = {
     // Update project status
     updateProject: async (projectId, status) => {
         try {
-            const response = await api.put(`/projects/${projectId}`, { status });
+            const response = await api.put(`/projects/${projectId}`,  status );
             return response.data;
         } catch (error) {
             console.error(`Error updating project status for ID (${projectId}):`, error);

@@ -1,21 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import { IoMdCloudUpload } from "react-icons/io";
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { userApi } from '../api/userApi';
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { userApi } from "../api/userApi";
+import { useAuth } from "../context/AuthContext";
 
 const Profile = () => {
-  const storedUser = JSON.parse(localStorage.getItem('userData'));
+  const { user, setUser, logout } = useAuth();
+  const storedUser = JSON.parse(localStorage.getItem("userData"));
   const userId = storedUser?._id;
 
   const [profileImage, setProfileImage] = useState(null);
+  const [tempImage, setTempImage] = useState(null); // for preview
+  const [imageFile, setImageFile] = useState(null); // file to upload
+
   const [profileData, setProfileData] = useState({
-    name: '',
-    email: '',
-    role: '',
-    phone: '',
-    department: '',
-    status: '',
+    name: "",
+    email: "",
+    role: "",
+    phone: "",
+    department: "",
+    status: "",
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -42,17 +47,8 @@ const Profile = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setProfileImage(URL.createObjectURL(file));
-
-      const formData = new FormData();
-      formData.append('avatar', file);
-
-      userApi.uploadAvatar(userId, formData)
-        .then(() => toast.success("Avatar uploaded successfully!"))
-        .catch(err => {
-          toast.error("Failed to upload avatar.");
-          console.error("Failed to upload avatar:", err);
-        });
+      setTempImage({ preview: URL.createObjectURL(file) });
+      setImageFile(file);
     }
   };
 
@@ -70,53 +66,90 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
+      // Upload image if selected
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("avatar", imageFile);
+        await userApi.uploadAvatar(userId, formData);
+        toast.success("Avatar uploaded successfully!");
+      }
+
       const updatedUser = await userApi.updateUser(userId, profileData);
-      localStorage.setItem('userData', JSON.stringify(updatedUser.data));
+      localStorage.setItem("userData", JSON.stringify(updatedUser.data));
+
+      // Refresh avatar preview
+      if (updatedUser.data.avatar) {
+        const fullUrl = `${import.meta.env.VITE_BASE_URL}${updatedUser.data.avatar}`;
+        setProfileImage(fullUrl);
+      }
+    
+      setUser(updatedUser.data);
+      setTempImage(null);
+      setImageFile(null);
       toast.success("Profile saved successfully!");
       setIsEditing(false);
     } catch (error) {
-      toast.error("Failed to update user.");
-      console.error("Failed to update user:", error);
+      toast.error("Failed to update profile.");
+      console.error("Save error:", error);
     }
   };
 
   return (
     <div className="max-h-screen bg-gradient-to-br flex items-center justify-center p-6">
-      <div className="bg-white w-full max-w-lg max-h-fit rounded-2xl shadow-xl p-4 relative text-center mt-20">
-
-        {/* Profile Image Upload */}
+      <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl p-4 relative text-center mt-20">
+        {/* Profile Image */}
         <div className="absolute -top-16 inset-x-0 mx-auto flex justify-center">
-          <label className="relative cursor-pointer">
-            <input
-              type="file"
-              className="hidden"
-              accept="image/*"
-              onChange={handleImageChange}
-            />
+          {isEditing ? (
+            <label className="relative cursor-pointer">
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+              <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100">
+                {tempImage?.preview || profileImage ? (
+                  <img
+                    src={tempImage?.preview || profileImage}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-400">
+                    <IoMdCloudUpload className="text-4xl" />
+                  </div>
+                )}
+              </div>
+            </label>
+          ) : (
             <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100">
               {profileImage ? (
-                <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                <img
+                  src={profileImage}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-400">
                   <IoMdCloudUpload className="text-4xl" />
                 </div>
               )}
             </div>
-          </label>
+          )}
         </div>
 
         {/* Info Section */}
         <div className="mt-20">
-          <h2 className="text-2xl font-semibold text-gray-800">{profileData.name}</h2>
+          <h2 className="text-2xl font-semibold text-gray-800">
+            {profileData.name}
+          </h2>
           <p className="text-gray-500">{profileData.role}</p>
 
           <div className="mt-3 space-y-4 text-left">
-
-            {/* Name and Email Side-by-Side */}
+            {/* Name and Email */}
             <div className="flex gap-4">
-              {/* Name Field */}
               <div className="w-1/2 flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-600">Name</label>
+                <label className="text-sm font-medium text-black">Name</label>
                 {isEditing ? (
                   <input
                     type="text"
@@ -130,9 +163,8 @@ const Profile = () => {
                 )}
               </div>
 
-              {/* Email Field */}
               <div className="w-1/2 flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-600">Email</label>
+                <label className="text-sm font-medium text-black">Email</label>
                 {isEditing ? (
                   <input
                     type="email"
@@ -146,37 +178,44 @@ const Profile = () => {
                 )}
               </div>
             </div>
-            <div className="flex gap-4">
-   
-             
-            {/* Phone Field */}
-              <div className="w-1/2 flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-600">Phone</label>
-              {isEditing ? (
-                <input
-                  type="tel"
-                  name="phone"
-                  value={profileData.phone}
-                  onChange={handleInputChange}
-                  className="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
-                />
-              ) : (
-                <p className="text-gray-800">{profileData.phone}</p>
-              )}
-            </div>
 
-            {/* Department */}
+            {/* Phone and Department */}
+            <div className="flex gap-4">
               <div className="w-1/2 flex flex-col gap-1">
-              <label className="block text-sm font-medium text-gray-600">Department:</label>
-              <p className="mt-1 text-gray-800">{profileData.department}</p>
+                <label className="text-sm font-medium text-black">Phone</label>
+                {isEditing ? (
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={profileData.phone}
+                    onChange={handleInputChange}
+                    className="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  />
+                ) : (
+                  <p className="text-black">{profileData.phone}</p>
+                )}
+              </div>
+
+              <div className="w-1/2 flex flex-col gap-1">
+                <label className="block text-sm font-medium text-black">
+                  Department
+                </label>
+                <p className="mt-1 text-gray-800">{profileData.department}</p>
               </div>
             </div>
 
             {/* Status */}
             <div className="flex flex-col gap-1">
-              <label className="block text-sm font-medium text-gray-600">Status:</label>
-              <p className={`mt-1 font-medium ${profileData.status === 'Active' ? 'text-green-600' : 'text-red-600'}`}>
-{profileData.status}
+              <label className="block text-sm font-medium text-black">
+                Status
+              </label>
+              <p
+                className={`mt-1 font-medium ${profileData.status === "Active"
+                    ? "text-green-600"
+                    : "text-red-600"
+                  }`}
+              >
+                {profileData.status}
               </p>
             </div>
           </div>

@@ -6,7 +6,8 @@ const {
     createUser,
     updateUser,
     deleteUser,
-    uploadAvatar
+    uploadAvatar,
+    Allusers
 } = require('../controllers/user.controller');
 
 const { protect, authorize } = require('../middleware/auth');
@@ -146,6 +147,8 @@ router.route('/')
  *       403:
  *         description: Forbidden
  */
+router.route('/allusers')
+    .get(protect, authorize('admin'), Allusers)
 router.route('/:id')
     .get(protect, authorize('admin'), getUser)
     /**

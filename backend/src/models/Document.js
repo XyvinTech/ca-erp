@@ -103,6 +103,11 @@ const DocumentSchema = new mongoose.Schema(
             ref: 'User',
             required: [true, 'Please specify the user who uploaded this document'],
         },
+        sharedWith: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+           
+        },
         tags: [String],
         isArchived: {
             type: Boolean,

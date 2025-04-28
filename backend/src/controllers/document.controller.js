@@ -12,6 +12,7 @@ const { logger } = require('../utils/logger');
  */
 exports.getDocuments = async (req, res, next) => {
     try {
+        console.log("7777777777777777777777777777777777777777777777777")
         // Pagination
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 10;
@@ -85,7 +86,7 @@ exports.getDocuments = async (req, res, next) => {
                 select: 'name projectNumber'
             })
             .populate({
-                path: 'createdBy',
+                path: 'uploadedBy',
                 select: 'name email'
             })
             .populate({
@@ -172,9 +173,13 @@ exports.getDocument = async (req, res, next) => {
  */
 exports.createDocument = async (req, res, next) => {
     try {
+        console.log("fggggggggggggggggggggggggggggggggggggggggg", req.user.id, req.body,req.file.filename)
         // Add user to req.body
-        req.body.createdBy = req.user.id;
-
+        req.body.uploadedBy = req.user.id;
+        req.body.fileUrl = `/uploads/documents/${req.file.filename}`;
+        req.body.fileType = req.file.mimetype;
+        req.body.name = req.file.originalname; 
+        req.body.fileSize = req.file.size;
         // Check if project exists
         if (req.body.project) {
             const project = await Project.findById(req.body.project);
@@ -392,11 +397,11 @@ exports.downloadDocument = async (req, res, next) => {
         }
 
         // Check if file exists
-        if (!document.file || !document.file.path) {
+        if (!document.fileUrl || !document.fileUrl) {
             return next(new ErrorResponse(`No file found for this document`, 404));
         }
 
-        const filePath = path.join(__dirname, '../../public', document.file.path);
+        const filePath = path.join(__dirname, '../../public', document.fileUrl);
 
         if (!fs.existsSync(filePath)) {
             return next(new ErrorResponse(`File not found`, 404));
@@ -406,7 +411,7 @@ exports.downloadDocument = async (req, res, next) => {
         logger.info(`Document downloaded: ${document.name} (${document._id}) by ${req.user.name} (${req.user._id})`);
 
         // Send the file
-        res.download(filePath, document.file.originalName);
+        res.download(filePath, document.name);
     } catch (error) {
         next(error);
     }

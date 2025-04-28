@@ -38,5 +38,12 @@ export const userApi = {
             },
         });
         return response.data;
-    }
+    },
+    Allusers: async () => {
+        const response = await api.get('/users/allusers');
+        return {
+            data: response,
+         
+        };
+    },
 }

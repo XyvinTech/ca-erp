@@ -15,7 +15,7 @@ export const documentsApi = {
 
     // Upload document
     uploadDocument: async (formData) => {
-        const response = await api.post('/documents/upload', formData, {
+        const response = await api.post('/documents', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },

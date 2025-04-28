@@ -112,8 +112,8 @@ const TaskSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['to-do', 'in-progress', 'under-review', 'completed', 'invoiceable', 'invoiced'],
-            default: 'to-do',
+            enum: ['pending', 'in-progress', 'under-review', 'completed', 'invoiceable', 'invoiced', 'cancelled','review'],
+            default: 'pending',
         },
         priority: {
             type: String,
@@ -126,6 +126,11 @@ const TaskSchema = new mongoose.Schema(
         estimatedHours: {
             type: Number,
             default: 0,
+        },
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: [true, 'Please specify the user who created this task'],
         },
         parent: {
             type: mongoose.Schema.Types.ObjectId,
@@ -192,6 +197,11 @@ const TaskSchema = new mongoose.Schema(
                 type: String,
             },
         },
+        team: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }],
+
     },
     {
         timestamps: true,
