@@ -38,7 +38,6 @@ export const ROUTES = {
     SETTINGS: '/settings',
     FINANCE: '/finance',
 
-    PROFILES: '/profile',
 
 
 }; 
