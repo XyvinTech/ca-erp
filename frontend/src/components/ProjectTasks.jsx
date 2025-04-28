@@ -30,18 +30,20 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
 
   useEffect(() => {
     // If tasks were provided as props, use them
-    if (initialTasks) {
-      setTasks(initialTasks);
-      setLoading(false);
-      return;
-    }
+    // if (initialTasks) {
+    //   console.log(initialTasks, "4444+9dddd55555555555")
+    //   setTasks(initialTasks);
+    //   setLoading(false);
+    //   return;
+    // }
 
     // Otherwise, fetch tasks from the API
     const loadTasks = async () => {
       try {
         setLoading(true);
-        const data = await fetchTasksByProject(projectId);
-        setTasks(data.tasks);
+        const response = await fetchTasksByProject(projectId);
+        console.log("Fetched response:", response);
+        setTasks(Array.isArray(response.data) ? response.data : []);
         setLoading(false);
       } catch (err) {
         console.error("Failed to fetch project tasks:", err);
@@ -49,6 +51,7 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
         setLoading(false);
       }
     };
+
 
     loadTasks();
   }, [projectId]); // Removed initialTasks from dependencies to avoid unnecessary reruns

@@ -50,6 +50,11 @@ const TaskDetail = () => {
       try {
         setLoading(true);
         const data = await fetchTaskById(id);
+        // Convert the first letter of status to uppercase for display
+        // const formattedStatus = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+
+        // // Update task with the formatted status
+        // setTask({ ...data, status: formattedStatus });
         setTask(data);
         setLoading(false);
       } catch (err) {
@@ -848,11 +853,11 @@ const TaskDetail = () => {
             <div className="p-6">
               <div className="space-y-2">
                 {[
-                  "Pending",
-                  "In Progress",
-                  "Review",
-                  "Completed",
-                  "Cancelled",
+                  "pending",
+                  "in-progress",
+                  "review",
+                  "completed",
+                  "cancelled",
                 ].map((status) => (
                   <button
                     key={status}

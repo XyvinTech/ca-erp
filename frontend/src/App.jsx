@@ -17,7 +17,13 @@ import Settings from "./pages/Settings";
 import ErrorPage from "./pages/ErrorPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+
+
 import Profile from "./pages/Profile";
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,7 +71,9 @@ function App() {
                 <Route path={ROUTES.DOCUMENTS} element={<Documents />} />
                 <Route path={ROUTES.FINANCE} element={<Finance />} />
                 <Route path={ROUTES.SETTINGS} element={<Settings />} />
+
                 <Route path={ROUTES.PROFILES} element={<Profile />} />
+
 
                 {/* Default and 404 */}
                 <Route path="/" element={<Navigate to={ROUTES.DASHBOARD} />} />

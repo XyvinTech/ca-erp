@@ -11,6 +11,10 @@ exports.protect = async (req, res, next) => {
         req.headers.authorization &&
         req.headers.authorization.startsWith('Bearer')
     ) {
+
+        // Extract token from Bearer token in header
+        token = req.headers.authorization.split(' ')[1];
+
      
         // Extract token from Bearer token in header
         token = req.headers.authorization.split(' ')[1];
@@ -31,9 +35,16 @@ exports.protect = async (req, res, next) => {
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+
+        // Get user from the token
+        req.user = await User.findById(decoded.id);
+
+
        
         // Get user from the token
         req.user = await User.findById(decoded.id);
+      
+
 
         if (!req.user) {
             return next(new ErrorResponse('User not found', 404));

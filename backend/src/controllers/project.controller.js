@@ -74,7 +74,15 @@ exports.getProjects = async (req, res, next) => {
             .populate({
                 path: 'createdBy',
                 select: 'name email'
-            });
+            })
+            .populate({
+                path: 'documents',
+                select: 'name fileUrl category uploadedBy createdAt',
+                populate: {
+                    path: 'uploadedBy',
+                    select: 'name email',
+                },
+            });;
 
         // Pagination result
         const pagination = {};
@@ -124,6 +132,23 @@ exports.getProject = async (req, res, next) => {
             .populate({
                 path: 'createdBy',
                 select: 'name email'
+            })
+            .populate({
+                path: 'team',
+                model: 'User', // 👈 Ensures it's pulling from User collection
+                select: 'name email role department avatar', // ⬅️ Add any fields you want
+            })
+            .populate({
+                path: 'documents',
+                select: 'name fileUrl category uploadedBy createdAt',
+                populate: {
+                    path: 'uploadedBy',
+                    select: 'name email',
+                },
+            })
+            .populate({
+                path: 'notes.author',
+                select: 'name email role avatar', // or whichever fields you want
             });
 
         if (!project) {
@@ -135,10 +160,18 @@ exports.getProject = async (req, res, next) => {
             return next(new ErrorResponse(`User not authorized to access this project`, 403));
         }
 
+        const projectObject = project.toObject(); // Convert Mongoose doc to plain object
+
+        // Remove budget if user is not admin or finance
+        if (!['admin', 'finance'].includes(req.user.role)) {
+            delete projectObject.budget;
+        }
+
         res.status(200).json({
             success: true,
-            data: project,
+            data: projectObject,
         });
+
     } catch (error) {
         next(error);
     }
@@ -153,7 +186,7 @@ exports.createProject = async (req, res, next) => {
     try {
         // Add user to req.body
         req.body.createdBy = req.user.id;
-
+        console.log(req.body)
         // Check if client exists
         if (req.body.client) {
             const client = await Client.findById(req.body.client);
@@ -181,7 +214,8 @@ exports.createProject = async (req, res, next) => {
 
             req.body.projectNumber = `PRJ-${year}${month}-${sequence}`;
         }
-
+  
+        
         const project = await Project.create(req.body);
 
         // Log the project creation
@@ -220,6 +254,13 @@ exports.updateProject = async (req, res, next) => {
             if (!client) {
                 return next(new ErrorResponse(`Client not found with id of ${req.body.client}`, 404));
             }
+        }
+        if (req.body.notes && Array.isArray(req.body.notes)) {
+            req.body.notes = req.body.notes.map(note => ({
+                ...note,
+                author: req.user._id, // set author field
+                createdAt: note.createdAt || new Date(), // fallback if frontend didn't send createdAt
+            }));
         }
 
         project = await Project.findByIdAndUpdate(req.params.id, req.body, {
@@ -280,6 +321,7 @@ exports.deleteProject = async (req, res, next) => {
  */
 exports.getProjectTasks = async (req, res, next) => {
     try {
+        console.log(req.params.id,"4444444444444444444444444")
         const project = await Project.findById(req.params.id);
 
         if (!project) {

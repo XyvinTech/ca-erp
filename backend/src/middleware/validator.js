@@ -4,6 +4,7 @@ const { ErrorResponse } = require('./errorHandler');
 // Function to validate request against a Joi schema
 const validate = (schema) => {
     return (req, res, next) => {
+        console.log(req.body)
         const options = {
             abortEarly: false, // include all errors
             allowUnknown: true, // ignore unknown props
@@ -126,6 +127,7 @@ const projectValidation = {
             description: Joi.string().max(500),
             client: Joi.string().required(),
             manager: Joi.string(),
+            priority: Joi.string(),
             team: Joi.array().items(Joi.string()),
             status: Joi.string().valid('planning', 'in-progress', 'on-hold', 'completed', 'archived'),
             startDate: Joi.date(),
@@ -148,6 +150,12 @@ const projectValidation = {
             startDate: Joi.date(),
             dueDate: Joi.date(),
             budget: Joi.number().min(0),
+            notes: Joi.array().items(
+                Joi.object({
+                    content: Joi.string().required(),
+                    createdAt: Joi.date(),
+                })
+            ),
         }),
     }),
 };
@@ -160,7 +168,7 @@ const taskValidation = {
             description: Joi.string().max(500),
             project: Joi.string().required(),
             assignedTo: Joi.string(),
-            status: Joi.string().valid('to-do', 'in-progress', 'under-review', 'completed', 'invoiceable', 'invoiced'),
+            status: Joi.string().valid('pending', 'in-progress', 'under-review', 'completed', 'invoiceable', 'invoiced', 'cancelled','review'),
             priority: Joi.string().valid('low', 'medium', 'high', 'urgent'),
             dueDate: Joi.date(),
             estimatedHours: Joi.number().min(0),
@@ -177,7 +185,7 @@ const taskValidation = {
             description: Joi.string().max(500),
             project: Joi.string(),
             assignedTo: Joi.string(),
-            status: Joi.string().valid('to-do', 'in-progress', 'under-review', 'completed', 'invoiceable', 'invoiced'),
+            status: Joi.string().valid('pending', 'in-progress', 'under-review', 'completed', 'invoiceable', 'invoiced', 'cancelled', 'review'),
             priority: Joi.string().valid('low', 'medium', 'high', 'urgent'),
             dueDate: Joi.date(),
             estimatedHours: Joi.number().min(0),

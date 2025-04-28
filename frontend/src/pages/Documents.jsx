@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { documents } from "../dummyData/documents";
 import { documentsApi } from "../api/documentsApi";
-
+import { fetchProjects } from "../api/projects";
 // File type icons
 const getFileIcon = (type) => {
   if (type.includes("pdf")) {
@@ -94,6 +94,10 @@ const getFileIcon = (type) => {
     );
   }
 };
+const getFileExtension = (fileUrl) => {
+  const parts = fileUrl.split('.');
+  return parts.length > 1 ? parts.pop().toLowerCase() : '';
+};
 
 const Documents = () => {
   const [allDocuments, setAllDocuments] = useState([]);
@@ -109,26 +113,33 @@ const Documents = () => {
   });
   const [showConfirmDelete, setShowConfirmDelete] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
-
+  const [file, setFile] = useState(null); // State to hold the selected file
+  const [description, setDescription] = useState(""); // State for document description
+  const [selectedProject, setSelectedProject] = useState("");
+  const [projects, setProjects] = useState([]);
   useEffect(() => {
-    const fetchDocuments = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoading(true);
-        // In a real app, use the API call instead of dummy data
-        // const data = await documentsApi.getAllDocuments();
-        const data = documents;
-        setAllDocuments(data);
-        setFilteredDocuments(data);
+        const [documentsRes, projectsRes] = await Promise.all([
+          documentsApi.getAllDocuments(),
+          fetchProjects()
+        ]);
+        console.log(documentsRes, "555555555", projectsRes)
+        setAllDocuments(documentsRes.data);
+        setFilteredDocuments(documentsRes.data);
+        setProjects(projectsRes.data); // Assuming response shape
         setLoading(false);
       } catch (err) {
-        console.error("Failed to load documents:", err);
-        setError("Failed to load documents. Please try again later.");
+        console.error("Failed to load documents or projects:", err);
+        setError("Something went wrong while fetching data.");
         setLoading(false);
       }
     };
 
-    fetchDocuments();
+    fetchInitialData();
   }, []);
+
 
   useEffect(() => {
     filterDocuments();
@@ -181,34 +192,49 @@ const Documents = () => {
 
   const handleDeleteDocument = async (documentId) => {
     try {
-      setLoading(true);
-      // In a real app, use the API call
-      // await documentsApi.deleteDocument(documentId);
+      // Make the API call to delete the document (you need to replace this with the correct API call)
+      await documentsApi.deleteDocument(documentId); // Assuming the API method is called `deleteDocument`
 
-      // For demo, just filter out the deleted document
-      const updatedDocuments = allDocuments.filter(
-        (doc) => doc.id !== documentId
-      );
-      setAllDocuments(updatedDocuments);
-      setFilteredDocuments(
-        filteredDocuments.filter((doc) => doc.id !== documentId)
-      );
+      // Optionally, update the UI after deleting (e.g., removing the document from the state)
+      // If you're managing the list of documents with state, you can filter out the deleted document.
+      setFilteredDocuments(filteredDocuments.filter(doc => doc.id !== documentId));
 
-      setShowConfirmDelete(null);
-      setSuccessMessage("Document deleted successfully");
-
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage("");
-      }, 3000);
-
-      setLoading(false);
-    } catch (err) {
-      console.error("Failed to delete document:", err);
-      setError("Failed to delete document. Please try again later.");
-      setLoading(false);
+      alert("Document deleted successfully.");
+    } catch (error) {
+      console.error("Failed to delete document:", error);
+      alert("Error deleting document. Please try again.");
     }
   };
+
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]); // Set the selected file
+  };
+  const handleUploadSubmit = async (e) => {
+    e.preventDefault();
+    if (!file) {
+      setError("Please select a file to upload.");
+      return;
+    }
+
+    // Get file name without extension
+    const originalFileName = file.name;
+    const fileNameWithoutExtension = originalFileName.replace(/\.[^/.]+$/, "");
+    console.log(fileNameWithoutExtension,"ddddddddddddgrtrteryteyrt")
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("name", fileNameWithoutExtension); // Automatically set name
+    formData.append("description", description);
+    formData.append("project", selectedProject); // Optional
+    console.log(formData)
+    try {
+      const newDocument = await documentsApi.uploadDocument(formData);
+      handleUploadSuccess(newDocument);
+    } catch (err) {
+      console.error("Failed to upload document:", err);
+      setError("Failed to upload document. Please try again later.");
+    }
+  };
+
 
   // For demo, these would be fetched from API
   const projectOptions = [
@@ -224,7 +250,24 @@ const Documents = () => {
     { id: 3, name: "Robert Johnson" },
     { id: 4, name: "Emily Wilson" },
   ];
+  const handleDownloadDocument = async (documentId, filename) => {
+    try {
+      const blob = await documentsApi.downloadDocument(documentId);
 
+      // Create a blob URL and trigger download
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename || "document"); // fallback if no name
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url); // Clean up
+    } catch (error) {
+      console.error("Failed to download document:", error);
+      alert("Error downloading document. Please try again.");
+    }
+  };
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-IN", {
       year: "numeric",
@@ -458,7 +501,8 @@ const Documents = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
-                          {getFileIcon(document.type)}
+                          {getFileIcon(getFileExtension(document.fileUrl))}
+
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">
@@ -471,12 +515,12 @@ const Documents = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {document.projectId ? (
+                      {document.project ? (
                         <Link
-                          to={`/projects/${document.projectId}`}
+                          to={`/projects/${document.project._id}`}
                           className="text-blue-600 hover:text-blue-900"
                         >
-                          {getProjectName(document.projectId)}
+                          {document.project.name}
                         </Link>
                       ) : (
                         <span className="text-gray-500">-</span>
@@ -484,28 +528,24 @@ const Documents = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {getUserName(document.uploadedBy)}
+                        {document.uploadedBy.name}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {formatDate(document.uploadedAt)}
+                        {document.createdAt}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {document.size}
+                        {document.fileSize}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex space-x-3">
                         <button
                           className="text-blue-600 hover:text-blue-900"
-                          onClick={() => {
-                            // In a real app, use the API call
-                            // documentsApi.downloadDocument(document.id);
-                            alert(`Downloading ${document.name}`);
-                          }}
+                          onClick={() => handleDownloadDocument(document._id, document.name)}
                         >
                           <svg
                             className="w-5 h-5"
@@ -524,7 +564,7 @@ const Documents = () => {
                         </button>
                         <button
                           className="text-red-600 hover:text-red-900"
-                          onClick={() => setShowConfirmDelete(document.id)}
+                          onClick={() => handleDeleteDocument(document._id)}
                         >
                           <svg
                             className="w-5 h-5"
@@ -541,6 +581,7 @@ const Documents = () => {
                             ></path>
                           </svg>
                         </button>
+
                       </div>
                     </td>
                   </tr>
@@ -583,24 +624,7 @@ const Documents = () => {
               </button>
             </div>
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                // In a real app, this would upload the file
-                // For demo, just add a mock document
-                handleUploadSuccess({
-                  id: Math.max(...allDocuments.map((d) => d.id)) + 1,
-                  name: "New Document.pdf",
-                  projectId: 1,
-                  taskId: null,
-                  uploadedBy: 1,
-                  uploadedAt: new Date().toISOString(),
-                  size: "1.2 MB",
-                  type: "application/pdf",
-                  description: "Newly uploaded document",
-                  version: 1,
-                  path: "/documents/new-document.pdf",
-                });
-              }}
+              onSubmit={handleUploadSubmit} // Use the handleUploadSubmit function
             >
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -623,17 +647,27 @@ const Documents = () => {
                     </svg>
                   </div>
                   <div className="mt-2">
-                    <label className="text-sm text-gray-600">
-                      <span className="text-blue-600 hover:text-blue-500 cursor-pointer">
+                    <label className="text-sm text-gray-600 cursor-pointer">
+                      <span className="text-blue-600 hover:text-blue-500">
                         Click to upload
                       </span>
                       {" or drag and drop"}
+                      <input
+                        type="file"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        accept=".pdf,.docx,.xlsx,.pptx"
+                        required
+                      />
                     </label>
-                    <input
+
+                    {/* <input
                       type="file"
+                      onChange={handleFileChange} // Capture file input
                       className="hidden"
                       accept=".pdf,.docx,.xlsx,.pptx"
-                    />
+                      required // Make it required
+                    /> */}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     PDF, Word, Excel, PowerPoint up to 10MB
@@ -650,9 +684,12 @@ const Documents = () => {
                 </label>
                 <textarea
                   id="description"
+                  value={description} // Bind the value to state
+                  onChange={(e) => setDescription(e.target.value)} // Update state on change
                   placeholder="Enter document description"
                   rows="3"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required // Make it required
                 ></textarea>
               </div>
 
@@ -665,10 +702,12 @@ const Documents = () => {
                 </label>
                 <select
                   id="project"
+                  value={selectedProject} // Bind the value to state
+                  onChange={(e) => setSelectedProject(e.target.value)} // Update state on change
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">No Project</option>
-                  {projectOptions.map((project) => (
+                  {projects.map((project) => (
                     <option key={project.id} value={project.id}>
                       {project.name}
                     </option>

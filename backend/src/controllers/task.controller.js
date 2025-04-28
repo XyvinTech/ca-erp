@@ -11,6 +11,7 @@ const { logger } = require('../utils/logger');
  */
 exports.getTasks = async (req, res, next) => {
     try {
+        console.log(req.query.status, req.query.project,"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr")
         // Pagination
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 10;
@@ -168,10 +169,11 @@ exports.createTask = async (req, res, next) => {
     try {
         // Add user to req.body
         req.body.createdBy = req.user.id;
-
+        let project
         // Check if project exists
         if (req.body.project) {
-            const project = await Project.findById(req.body.project);
+            project = await Project.findById(req.body.project);
+            console.log(project,"88888888888888888888888")
             if (!project) {
                 return next(new ErrorResponse(`Project not found with id of ${req.body.project}`, 404));
             }
@@ -184,6 +186,11 @@ exports.createTask = async (req, res, next) => {
                 return next(new ErrorResponse(`User not found with id of ${req.body.assignedTo}`, 404));
             }
         }
+        if (project && Array.isArray(project.team) && !project.team.some(memberId => memberId.toString() === req.body.assignedTo.toString())) {
+            project.team.push(req.body.assignedTo);
+            await project.save();
+        }
+
 
         // Generate task number if not provided
         if (!req.body.taskNumber) {
@@ -337,7 +344,7 @@ exports.updateTaskStatus = async (req, res, next) => {
 
         if (status === 'completed') {
             updateData.completedAt = Date.now();
-        } else if (status === 'in-progress' && task.status === 'to-do') {
+        } else if (status === 'in-progress' && task.status === 'pending') {
             updateData.startedAt = Date.now();
         }
 

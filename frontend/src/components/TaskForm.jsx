@@ -1,81 +1,154 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
+import { userApi } from "../api/userApi";
+import { createTask, updateTask } from "../api/tasks";
+import { projectsApi } from "../api/projectsApi"; // Assuming you have a project API
 
-const TaskForm = ({ projectId, onSuccess, onCancel }) => {
-  const [title, setTitle] = useState("");
-  const [status, setStatus] = useState("pending");
-  const [priority, setPriority] = useState("Medium");
-  const [assignee, setAssignee] = useState("");
-  const [dueDate, setDueDate] = useState("");
+const TaskForm = ({ onSuccess, onCancel, task = null }) => {
+  const [title, setTitle] = useState(task?.title || "");
+  const [status, setStatus] = useState(task?.status || "pending");
+  const [priority, setPriority] = useState(task?.priority?.charAt(0).toUpperCase() + task?.priority?.slice(1) || "Medium");
+  const [assignedTo, setAssignedTo] = useState(task?.assignedTo?._id || "");
+  const [dueDate, setDueDate] = useState(task?.dueDate ? task.dueDate.split("T")[0] : "");
+  const [projectId, setProjectId] = useState(task?.project?._id || "");
 
-  // Retrieve token from localStorage
-  const token = localStorage.getItem("authToken");
-  console.log("Retrieved token:", token); // Log the token to verify if it exists
+  const [users, setUsers] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [userError, setUserError] = useState(null);
+  const [projectError, setProjectError] = useState(null);
+
+  const token = localStorage.getItem("auth_token");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Check if token exists
     if (!token) {
       console.error("Unauthorized: No token found");
       alert("Unauthorized: No token found");
       return;
     }
 
+    if (!projectId) {
+      alert("Please select a project.");
+      return;
+    }
+
     try {
-      const response = await axios.post(
-        "http://localhost:5001/api/tasks",
-        {
-          title,
-          projectId, // this must be passed and sent
-          status,
-          priority,
-          assignee,
-          dueDate,
-        },
-        {
-          headers: {
-            "Authorization": `Bearer ${token}`, // Pass the token in the header
-          },
-        }
-      );
-      onSuccess(response.data); // this should update state with backend-confirmed task
+      const taskData = {
+        title,
+        project: projectId,
+        status,
+        priority: priority.toLowerCase(),
+        assignedTo,
+        dueDate,
+      };
+
+      let response;
+      if (task) {
+        response = await updateTask(task._id, taskData, token);
+      } else {
+        response = await createTask(taskData, token);
+      }
+
+      onSuccess(response.data);
     } catch (err) {
-      console.error("Failed to create task", err);
-      if (err.response && err.response.status === 401) {
+      console.error("Failed to create/update task", err);
+      if (err.response?.status === 401) {
         alert("Unauthorized: Please log in.");
+      } else {
+        alert(err.response?.data?.message || "Failed to create/update task");
       }
     }
   };
 
+  useEffect(() => {
+    const loadUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        const response = await userApi.Allusers();
+        setUsers(response.data?.data?.data || []);
+      } catch (error) {
+        console.error("Failed to load users:", error);
+        setUserError("Failed to load users");
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    const loadProjects = async () => {
+      setLoadingProjects(true);
+      try {
+        const response = await projectsApi.getAllProjects();
+        console.log(response.data);
+        
+        setProjects(response.data || []);
+      } catch (error) {
+        console.error("Failed to load projects:", error);
+        setProjectError("Failed to load projects");
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+
+    if (token) {
+      loadUsers();
+      loadProjects();
+    }
+  }, [token]);
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-xl font-semibold mb-4">Create Task</h2>
+      <h2 className="text-xl font-semibold mb-4">{task ? "Edit Task" : "Create Task"}</h2>
 
       <form onSubmit={handleSubmit}>
+        {/* Task Title */}
         <div className="mb-4">
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-            Task Title
-          </label>
+          <label htmlFor="title" className="block text-sm font-medium text-gray-700">Task Title</label>
           <input
             id="title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
             required
           />
         </div>
 
+        {/* Project Dropdown */}
         <div className="mb-4">
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-            Status
-          </label>
+          <label htmlFor="project" className="block text-sm font-medium text-gray-700">Project</label>
+          <select
+            id="project"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          >
+            <option value="">Select a project</option>
+            {loadingProjects ? (
+              <option disabled>Loading...</option>
+            ) : projectError ? (
+              <option disabled>{projectError}</option>
+            ) : (
+              projects.map((proj) => (
+                <option key={proj._id} value={proj._id}>
+                  {proj.name}
+                </option>
+              ))
+            )}
+          </select>
+        </div>
+
+        {/* Status Dropdown */}
+        <div className="mb-4">
+          <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
           <select
             id="status"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
           >
             <option value="pending">Pending</option>
             <option value="in-progress">In Progress</option>
@@ -85,15 +158,14 @@ const TaskForm = ({ projectId, onSuccess, onCancel }) => {
           </select>
         </div>
 
+        {/* Priority Dropdown */}
         <div className="mb-4">
-          <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
-            Priority
-          </label>
+          <label htmlFor="priority" className="block text-sm font-medium text-gray-700">Priority</label>
           <select
             id="priority"
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
           >
             <option value="High">High</option>
             <option value="Medium">Medium</option>
@@ -101,45 +173,56 @@ const TaskForm = ({ projectId, onSuccess, onCancel }) => {
           </select>
         </div>
 
+        {/* Assigned To Dropdown */}
         <div className="mb-4">
-          <label htmlFor="assignee" className="block text-sm font-medium text-gray-700">
-            Assignee
-          </label>
-          <input
-            id="assignee"
-            type="text"
-            value={assignee}
-            onChange={(e) => setAssignee(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          />
+          <label htmlFor="assignedTo" className="block text-sm font-medium text-gray-700">Assigned To</label>
+          <select
+            id="assignedTo"
+            value={assignedTo}
+            onChange={(e) => setAssignedTo(e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+          >
+            <option value="">Select a user</option>
+            {loadingUsers ? (
+              <option disabled>Loading...</option>
+            ) : userError ? (
+              <option disabled>{userError}</option>
+            ) : (
+              users.map((user) => (
+                <option key={user._id} value={user._id}>
+                  {user.name || user.email}
+                </option>
+              ))
+            )}
+          </select>
         </div>
 
+        {/* Due Date */}
         <div className="mb-4">
-          <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700">
-            Due Date
-          </label>
+          <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700">Due Date</label>
           <input
             id="dueDate"
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
           />
         </div>
 
+        {/* Buttons */}
         <div className="flex justify-between mt-6">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 focus:outline-none"
+            className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
-            Create Task
+            {task ? "Update Task" : "Create Task"}
           </button>
         </div>
       </form>

@@ -103,6 +103,7 @@ const ProjectSchema = new mongoose.Schema(
             enum: ['planning', 'in-progress', 'on-hold', 'completed', 'archived'],
             default: 'planning',
         },
+     
         startDate: {
             type: Date,
         },
@@ -111,6 +112,9 @@ const ProjectSchema = new mongoose.Schema(
         },
         budget: {
             type: Number,
+        },
+        priority: {
+            type: String,
         },
         documents: [
             {
@@ -122,6 +126,15 @@ const ProjectSchema = new mongoose.Schema(
             {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Task',
+            },
+        ],
+        notes: [
+            {
+                content: { type: String},
+                author: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'User', },
+                createdAt: { type: Date, default: Date.now },
             },
         ],
     },

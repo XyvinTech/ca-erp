@@ -3,19 +3,22 @@ import { Link } from "react-router-dom";
 import { fetchTasks } from "../api/tasks";
 import { fetchProjects } from "../api/projects";
 import CreateTaskModal from "../components/CreateTaskModal";
+import { FaGreaterThan } from "react-icons/fa";
+import { FaLessThan } from "react-icons/fa6";
+
 
 const statusColors = {
-  Pending: "bg-yellow-100 text-yellow-800",
-  "In Progress": "bg-blue-100 text-blue-800",
-  Review: "bg-purple-100 text-purple-800",
-  Completed: "bg-green-100 text-green-800",
-  Cancelled: "bg-gray-100 text-gray-800",
+  "pending": "bg-yellow-100 text-yellow-800",
+  "in-progress": "bg-blue-100 text-blue-800",
+  "review": "bg-purple-100 text-purple-800",
+  "completed": "bg-green-100 text-green-800",
+  "cancelled": "bg-gray-100 text-gray-800",
 };
 
 const priorityColors = {
-  High: "bg-red-100 text-red-800",
-  Medium: "bg-orange-100 text-orange-800",
-  Low: "bg-green-100 text-green-800",
+  high: "bg-red-100 text-red-800",
+  medium: "bg-orange-100 text-orange-800",
+  low: "bg-green-100 text-green-800",
 };
 
 const Tasks = () => {
@@ -24,6 +27,8 @@ const Tasks = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -39,14 +44,16 @@ const Tasks = () => {
     try {
       setLoading(true);
       const [tasksData, projectsData] = await Promise.all([
-        fetchTasks(),
+        fetchTasks({ ...filters, page: currentPage, limit: 10 }), // Pass pagination
         fetchProjects(),
       ]);
+      const nextPage = tasksData.tasks?.pagination?.next?.page || 1;  // Default to 1 if not available
+      console.log(nextPage, "8888888");
+      setTasks(Array.isArray(tasksData.tasks.data) ? tasksData.tasks.data : []);  // Set tasks
+      setProjects(Array.isArray(projectsData.data) ? projectsData.data : []);  // Set projects
+      setTeamMembers(Array.isArray(tasksData.tasks.data) ? tasksData.tasks.data.map(task => task.assignedTo) : []);  // Set team members, assuming you want to get assigned users
+      setTotalPages(nextPage);  // Set total pages, using the next page info from pagination
 
-      // Ensure data is an array before setting state
-      setTasks(Array.isArray(tasksData.tasks) ? tasksData.tasks : []);
-      setProjects(Array.isArray(projectsData.projects) ? projectsData.projects : []);
-      setTeamMembers(Array.isArray(tasksData.team) ? tasksData.team : []);
       setLoading(false);
     } catch (err) {
       console.error("Failed to fetch data:", err);
@@ -55,9 +62,11 @@ const Tasks = () => {
     }
   };
 
+
   useEffect(() => {
     loadTasksAndProjects();
-  }, []);
+  }, [filters, currentPage]);
+
 
   const handleTaskCreated = (newTask) => {
     setTasks((prevTasks) => [...prevTasks, newTask]);
@@ -81,15 +90,21 @@ const Tasks = () => {
   };
 
   // Apply filters to tasks
-  const filteredTasks = tasks.filter((task) => {
-    if (filters.status && task.status !== filters.status) return false;
-    if (filters.priority && task.priority !== filters.priority) return false;
-    if (filters.project && task.project?.id !== filters.project) return false;
-    if (filters.assignedTo && task.assignedTo?.id !== filters.assignedTo)
-      return false;
-    return true;
-  });
-
+  // const filteredTasks = tasks.filter((task) => {
+  //   if (filters.status && task.status !== filters.status) return false;
+  //   if (filters.priority && task.priority !== filters.priority) return false;
+  //   if (filters.project && task.project?.id !== filters.project) return false;
+  //   if (filters.assignedTo && task.assignedTo?.id !== filters.assignedTo)
+  //     return false;
+  //   return true;
+  // });
+  const uniqueMembers = Array.from(
+    new Map(
+      tasks
+        .filter(t => t.assignedTo)
+        .map(t => [t.assignedTo._id, t.assignedTo])
+    ).values()
+  );
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -156,11 +171,11 @@ const Tasks = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Statuses</option>
-              <option value="Pending">Pending</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Review">Review</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
+              <option value="pending">Pending</option>
+              <option value="in-progress">In Progress</option>
+              <option value="review">Review</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
 
@@ -179,9 +194,9 @@ const Tasks = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Priorities</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
             </select>
           </div>
 
@@ -223,18 +238,19 @@ const Tasks = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Team Members</option>
-              {teamMembers && Array.isArray(teamMembers) && teamMembers.map((member) => (
-                <option key={member.id} value={member.id}>
+              {uniqueMembers.map(member => (
+                <option key={member._id} value={member._id}>
                   {member.name}
                 </option>
               ))}
+
             </select>
           </div>
         </div>
       </div>
 
       {/* Task List */}
-      {filteredTasks.length === 0 ? (
+      {tasks.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <h2 className="text-xl font-medium text-gray-900 mb-4">
             No tasks found
@@ -275,10 +291,10 @@ const Tasks = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredTasks.map((task) => (
+                {tasks.map((task) => (
                   <tr key={task.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {task.name}
+                      {task.title}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span
@@ -307,6 +323,39 @@ const Tasks = () => {
           </div>
         </div>
       )}
+      <div className="ml-40 flex justify-end items-center mt-6 space-x-2">
+        <button
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+          className="px-3 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
+        >
+        <FaLessThan />
+        </button>
+        {[...Array(totalPages)].map((_, idx) => {
+          const page = idx + 1;
+          return (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`px-3 py-1 rounded ${currentPage === page
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 text-gray-700"
+                }`}
+            >
+              {page}
+            </button>
+          );
+        })}
+        <button
+          onClick={() =>
+            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+          }
+          disabled={currentPage === totalPages}
+          className="px-3 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
+        >
+     <FaGreaterThan />
+        </button>
+      </div>
 
       {/* Modal */}
       <CreateTaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onTaskCreated={handleTaskCreated} />

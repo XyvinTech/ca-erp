@@ -70,6 +70,7 @@ exports.getUsers = async (req, res, next) => {
  */
 exports.getUser = async (req, res, next) => {
     try {
+
         console.log( "654utityt7iiiiiiiiiiiiiiiiiiiii64646")
         const user = await User.findById(req.params.id);
 
@@ -229,3 +230,16 @@ exports.uploadAvatar = async (req, res, next) => {
         next(error);
     }
 }; 
+exports.Allusers = async (req, res, next) => {
+    try {
+        const users = await User.find().sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: users.length,
+            data: users,
+        });
+    } catch (error) {
+        next(error);
+    }
+};

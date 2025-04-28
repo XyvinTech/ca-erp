@@ -7,7 +7,8 @@ import {
 } from "../api/projects";
 import ProjectTasks from "../components/ProjectTasks";
 import ProjectForm from "../components/ProjectForm";
-
+import { documentsApi } from "../api/documentsApi";
+import { projectsApi } from "../api";
 const statusColors = {
   Completed: "bg-green-100 text-green-800",
   "In Progress": "bg-blue-100 text-blue-800",
@@ -31,13 +32,22 @@ const ProjectDetail = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [isEditing, setIsEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-
+  const [isAddDocumentModalOpen, setIsAddDocumentModalOpen] = useState(false);
+  const [isAddNoteModalOpen, setIsAddNotesModalOpen] = useState(false);
+  const [file, setFile] = useState(null); // State to hold the selected file
+  const [description, setDescription] = useState(""); // State for document description
+  const [selectedProject, setSelectedProject] = useState("");
+  const [reloadDocuments, setReloadDocuments] = useState(false);
+  const [noteContent, setNoteContent] = useState(""); // State for the note content
+  const [reloadProject, setReloadProject] = useState(false); 
   useEffect(() => {
     const loadProject = async () => {
       try {
         setLoading(true);
         const data = await fetchProjectById(id);
-        setProject(data);
+        console.log(data, "89498498498484")
+        setProject(data.data);
+        setSelectedProject(id)
         setLoading(false);
       } catch (err) {
         console.error("Failed to fetch project:", err);
@@ -47,13 +57,73 @@ const ProjectDetail = () => {
     };
 
     loadProject();
-  }, [id]);
 
+  }, [id, reloadDocuments, reloadProject]);
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]); // Set the selected file
+  };
   const handleProjectUpdate = async (updatedProject) => {
-    setProject(updatedProject);
+    setReloadProject(prev => !prev);
     setIsEditing(false);
   };
+  const handleUploadSuccess = (newDocument) => {
+    // After uploading, trigger document reload by changing reloadDocuments state
+    setReloadDocuments(true);
+    setIsAddDocumentModalOpen(false);
+  };
+  const handleUploadSubmit = async (e) => {
+    e.preventDefault();
+    if (!file) {
+      setError("Please select a file to upload.");
+      return;
+    }
 
+    // Get file name without extension
+    const originalFileName = file.name;
+    const fileNameWithoutExtension = originalFileName.replace(/\.[^/.]+$/, "");
+    console.log(fileNameWithoutExtension, "ddddddddddddgrtrteryteyrt")
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("name", fileNameWithoutExtension); // Automatically set name
+    formData.append("description", description);
+    formData.append("project", selectedProject); // Optional
+    console.log(formData)
+    try {
+      const newDocument = await documentsApi.uploadDocument(formData);
+      handleUploadSuccess(newDocument);
+    } catch (err) {
+      console.error("Failed to upload document:", err);
+      setError("Failed to upload document. Please try again later.");
+    }
+  };
+  // Handle adding a new note
+  const handleAddNote = async () => {
+    if (!noteContent) {
+      setError("Note content cannot be empty.");
+      return;
+    }
+
+    // Simulate an API call to add the note
+    const newNote = {
+      content: noteContent,
+       // Replace with actual user if needed
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      // Add the note to the project (simulate)
+      const updatedProject = { notes: [...project.notes, newNote] };
+      const updatedProj = await projectsApi.updateProject(project.id, updatedProject);
+      setReloadProject(prev => !prev);
+
+      // Reset the note content and close the modal
+      setNoteContent("");
+      setIsAddNotesModalOpen(false);
+    } catch (err) {
+      console.error("Failed to add note:", err);
+      setError("Failed to add note. Please try again later.");
+    }
+  };
   const handleDeleteProject = async () => {
     try {
       setLoading(true);
@@ -68,6 +138,25 @@ const ProjectDetail = () => {
       setLoading(false);
     }
   };
+  const handleDownloadDocument = async (documentId, filename) => {
+    try {
+      const blob = await documentsApi.downloadDocument(documentId);
+
+      // Create a blob URL and trigger download
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename || "document"); // fallback if no name
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url); // Clean up
+    } catch (error) {
+      console.error("Failed to download document:", error);
+      alert("Error downloading document. Please try again.");
+    }
+  };
+
 
   if (loading) {
     return (
@@ -351,14 +440,15 @@ const ProjectDetail = () => {
                     Team Members
                   </h3>
                   <div className="bg-gray-50 rounded-lg p-4">
-                    {project.teamMembers?.length > 0 ? (
+                    {project.team?.length > 0 ? (
                       <ul className="space-y-3">
-                        {project.teamMembers.map((member) => (
+                        {project.team.map((member) => (
                           <li key={member.id} className="flex items-center">
                             <div className="flex-shrink-0">
                               {member.avatar ? (
                                 <img
-                                  src={member.avatar}
+                                  src={`${import.meta.env.VITE_BASE_URL}${member.avatar}`}
+                                 
                                   alt={member.name}
                                   className="h-8 w-8 rounded-full"
                                 />
@@ -410,11 +500,20 @@ const ProjectDetail = () => {
 
           {activeTab === "documents" && (
             <div>
+              <div className="flex justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Documents</h3>
+                <button
+                  onClick={() => setIsAddDocumentModalOpen(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Add Document
+                </button>
+              </div>
               {project.documents?.length > 0 ? (
                 <div className="bg-gray-50 rounded-lg overflow-hidden">
                   <ul className="divide-y divide-gray-200">
                     {project.documents.map((doc) => (
-                      <li key={doc.id} className="p-4 hover:bg-gray-100">
+                      <li key={doc._id} className="p-4 hover:bg-gray-100">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
                             <svg
@@ -436,12 +535,15 @@ const ProjectDetail = () => {
                                 {doc.name}
                               </p>
                               <p className="text-xs text-gray-500">
-                                Uploaded by {doc.uploadedBy} on{" "}
-                                {new Date(doc.uploadDate).toLocaleDateString()}
+                                Uploaded by {doc.uploadedBy.name} on{" "}
+                                {new Date(doc.createdAt).toLocaleDateString()}
                               </p>
                             </div>
                           </div>
-                          <button className="text-sm text-blue-600 hover:text-blue-800">
+                          <button
+                            onClick={() => handleDownloadDocument(doc._id, doc.name)}
+                            className="text-sm text-blue-600 hover:text-blue-800"
+                          >
                             Download
                           </button>
                         </div>
@@ -463,7 +565,17 @@ const ProjectDetail = () => {
           )}
 
           {activeTab === "notes" && (
-            <div>
+            
+              <div>
+                <div className="flex justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Notes</h3>
+                  <button
+                    onClick={() => setIsAddNotesModalOpen(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Add Notes
+                  </button>
+                </div>
               {project.notes?.length > 0 ? (
                 <div className="space-y-4">
                   {project.notes.map((note) => (
@@ -474,7 +586,7 @@ const ProjectDetail = () => {
                       <p className="text-sm text-gray-700">{note.content}</p>
                       <div className="mt-2 flex items-center text-xs text-gray-500">
                         <span className="font-medium text-gray-700 mr-2">
-                          {note.author}
+                          {note.author.name}
                         </span>
                         <span>
                           {new Date(note.createdAt).toLocaleDateString()} at{" "}
@@ -522,6 +634,199 @@ const ProjectDetail = () => {
                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isAddDocumentModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Upload Document
+              </h3>
+              <button
+                className="text-gray-400 hover:text-gray-500"
+                onClick={() => setIsAddDocumentModalOpen(false)}
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+            <form
+              onSubmit={handleUploadSubmit} // Use the handleUploadSubmit function
+            >
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  File
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
+                  <div className="flex justify-center">
+                    <svg
+                      className="h-12 w-12 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                      ></path>
+                    </svg>
+                  </div>
+                  <div className="mt-2">
+                    <label className="text-sm text-gray-600 cursor-pointer">
+                      <span className="text-blue-600 hover:text-blue-500">
+                        Click to upload
+                      </span>
+                      {" or drag and drop"}
+                      <input
+                        type="file"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        accept=".pdf,.docx,.xlsx,.pptx"
+                        required
+                      />
+                    </label>
+
+                    {/* <input
+                      type="file"
+                      onChange={handleFileChange} // Capture file input
+                      className="hidden"
+                      accept=".pdf,.docx,.xlsx,.pptx"
+                      required // Make it required
+                    /> */}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    PDF, Word, Excel, PowerPoint up to 10MB
+                  </p>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label
+                  htmlFor="description"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  value={description} // Bind the value to state
+                  onChange={(e) => setDescription(e.target.value)} // Update state on change
+                  placeholder="Enter document description"
+                  rows="3"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required // Make it required
+                ></textarea>
+              </div>
+
+              {/* <div className="mb-4">
+                <label
+                  htmlFor="project"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Project (Optional)
+                </label>
+                <select
+                  id="project"
+                  value={selectedProject} // Bind the value to state
+                  onChange={(e) => setSelectedProject(e.target.value)} // Update state on change
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">No Project</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </div> */}
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddDocumentModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Upload
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Add Note Modal */}
+      {isAddNoteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Add Note</h3>
+              <button
+                className="text-gray-400 hover:text-gray-500"
+                onClick={() => setIsAddNotesModalOpen(false)}
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="noteContent" className="block text-sm font-medium text-gray-700 mb-1">
+                Note Content
+              </label>
+              <textarea
+                id="noteContent"
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                placeholder="Enter your note here"
+                rows="3"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              ></textarea>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setIsAddNotesModalOpen(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddNote}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Add Note
               </button>
             </div>
           </div>
