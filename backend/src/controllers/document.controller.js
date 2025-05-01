@@ -12,7 +12,8 @@ const { logger } = require('../utils/logger');
  */
 exports.getDocuments = async (req, res, next) => {
     try {
-        console.log("7777777777777777777777777777777777777777777777777")
+        console.log('Query:', req.query, req.user.role);
+
         // Pagination
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 10;
@@ -30,6 +31,15 @@ exports.getDocuments = async (req, res, next) => {
         }
         if (req.query.status) {
             filter.status = req.query.status;
+        }
+        if (req.query.type) {
+            console.log("firggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggst", req.query.type)
+            filter.fileType = req.query.type; // 'type' maps to 'fileType' in DB
+        }
+
+        if (req.query.uploadedBy) {
+            
+            filter.CreatedBy  = req.query.uploadedBy;
         }
 
         // If user is not admin, only show documents they have access to
@@ -224,9 +234,10 @@ exports.updateDocument = async (req, res, next) => {
         if (!document) {
             return next(new ErrorResponse(`Document not found with id of ${req.params.id}`, 404));
         }
+       
 
         // Check access - only admin and creator can update
-        if (req.user.role !== 'admin' && document.createdBy.toString() !== req.user.id.toString()) {
+        if (req.user.role !== 'admin' && document.uploadedBy.toString() !== req.user.id.toString()) {
             return next(new ErrorResponse(`User not authorized to update this document`, 403));
         }
 
@@ -237,7 +248,7 @@ exports.updateDocument = async (req, res, next) => {
                 return next(new ErrorResponse(`Project not found with id of ${req.body.project}`, 404));
             }
         }
-
+  
         // If file was uploaded, add file info and remove old file if exists
         if (req.file) {
             // Remove old file if exists
@@ -247,13 +258,18 @@ exports.updateDocument = async (req, res, next) => {
                     fs.unlinkSync(oldFilePath);
                 }
             }
-
-            req.body.file = {
-                path: `/uploads/documents/${req.file.filename}`,
-                originalName: req.file.originalname,
-                mimeType: req.file.mimetype,
-                size: req.file.size
-            };
+            console.log(req.file,"44444444444444444444")
+            req.body.CreatedBy  = req.user.id;
+            req.body.fileUrl = `/uploads/documents/${req.file.filename}`;
+            req.body.fileType = req.file.mimetype;
+            req.body.name = req.file.originalname;
+            req.body.fileSize = req.file.size;
+            // req.body.file = {
+            //     path: `/uploads/documents/${req.file.filename}`,
+            //     originalName: req.file.originalname,
+            //     mimeType: req.file.mimetype,
+            //     size: req.file.size
+            // };
         }
 
         document = await Document.findByIdAndUpdate(req.params.id, req.body, {
@@ -264,7 +280,7 @@ exports.updateDocument = async (req, res, next) => {
             select: 'name projectNumber'
         })
             .populate({
-                path: 'createdBy',
+                path: 'uploadedBy',
                 select: 'name email'
             })
             .populate({

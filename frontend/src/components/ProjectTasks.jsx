@@ -17,10 +17,12 @@ const statusColors = {
 };
 
 const priorityColors = {
-  High: "bg-red-100 text-red-800",
-  Medium: "bg-orange-100 text-orange-800",
-  Low: "bg-green-100 text-green-800",
+  high: "bg-red-100 text-red-800",
+  medium: "bg-orange-100 text-orange-800",
+  low: "bg-green-100 text-green-800",
 };
+
+
 
 const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
   const [tasks, setTasks] = useState(initialTasks || []);
@@ -52,13 +54,12 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
       }
     };
 
-
     loadTasks();
-  }, [projectId,reload]); // Removed initialTasks from dependencies to avoid unnecessary reruns
+  }, [projectId, reload]); // Removed initialTasks from dependencies to avoid unnecessary reruns
 
   const handleTaskCreated = (newTask) => {
-    setIsModalOpen(false);  // Close modal after creating
-    setReload(true);  
+    setIsModalOpen(false); // Close modal after creating
+    setReload(true);
     // setTasks((prevTasks) => [...prevTasks, newTask]);
     // if (onTaskCreated) onTaskCreated(newTask);
   };
@@ -186,13 +187,20 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
                       {task.priority}
                     </span>
                   </td>
+
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
                         {task.assignedTo?.avatar ? (
                           <img
                             className="h-8 w-8 rounded-full"
-                            src={task?.assignedTo?.avatar ? `${import.meta.env.VITE_BASE_URL}${task.assignedTo.avatar}` : undefined}
+                            src={
+                              task?.assignedTo?.avatar
+                                ? `${import.meta.env.VITE_BASE_URL}${
+                                    task.assignedTo.avatar
+                                  }`
+                                : undefined
+                            }
                             alt=""
                           />
                         ) : (

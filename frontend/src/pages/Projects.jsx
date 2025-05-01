@@ -4,17 +4,18 @@ import { projectsApi } from "../api/projectsApi";
 import CreateProjectModal from "../components/CreateProjectModal";
 
 const statusColors = {
-  Completed: "bg-green-100 text-green-800",
-  "In Progress": "bg-blue-100 text-blue-800",
-  Planning: "bg-purple-100 text-purple-800",
-  "On Hold": "bg-yellow-100 text-yellow-800",
-  Cancelled: "bg-red-100 text-red-800",
+  completed: "bg-green-100 text-green-800",
+  "in-progress": "bg-blue-100 text-blue-800",
+  planning: "bg-purple-100 text-purple-800",
+  "on-hold": "bg-yellow-100 text-yellow-800",
+  cancelled: "bg-red-100 text-red-800",
 };
 
+
 const priorityColors = {
-  High: "bg-red-100 text-red-800",
-  Medium: "bg-orange-100 text-orange-800",
-  Low: "bg-green-100 text-green-800",
+  high: "bg-red-100 text-red-800",
+  medium: "bg-orange-100 text-orange-800",
+  low: "bg-green-100 text-green-800",
 };
 
 const Projects = () => {

@@ -11,18 +11,20 @@ import ProjectTasks from "../components/ProjectTasks";
 import ProjectForm from "../components/ProjectForm";
 import { documentsApi } from "../api/documentsApi";
 import { projectsApi } from "../api";
-const statusColors = {
-  Completed: "bg-green-100 text-green-800",
-  "In Progress": "bg-blue-100 text-blue-800",
-  Planning: "bg-purple-100 text-purple-800",
-  "On Hold": "bg-yellow-100 text-yellow-800",
-  Cancelled: "bg-red-100 text-red-800",
-};
+
+  const statusColors = {
+    completed: "bg-green-100 text-green-800",
+    "in-progress": "bg-blue-100 text-blue-800",
+    planning: "bg-purple-100 text-purple-800",
+    "on-hold": "bg-yellow-100 text-yellow-800",
+    cancelled: "bg-red-100 text-red-800",
+  };
+  
 
 const priorityColors = {
-  High: "bg-red-100 text-red-800",
-  Medium: "bg-orange-100 text-orange-800",
-  Low: "bg-green-100 text-green-800",
+  high: "bg-red-100 text-red-800",
+  medium: "bg-orange-100 text-orange-800",
+  low: "bg-green-100 text-green-800",
 };
 
 const ProjectDetail = () => {
@@ -35,6 +37,10 @@ const ProjectDetail = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isAddDocumentModalOpen, setIsAddDocumentModalOpen] = useState(false);
+  const [isEditDocumentModalOpen, setIsEditDocumentModalOpen] = useState(false);
+  const [editingDocument, setEditingDocument] = useState(null);
+  const [editDocName, setEditDocName] = useState("");
+  const [editDocDescription, setEditDocDescription] = useState("");
   const [isAddNoteModalOpen, setIsAddNotesModalOpen] = useState(false);
   const [file, setFile] = useState(null); // State to hold the selected file
   const [description, setDescription] = useState(""); // State for document description
@@ -89,12 +95,25 @@ const ProjectDetail = () => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("name", fileNameWithoutExtension); // Automatically set name
-    formData.append("description", description);
+    formData.append("description", editDocDescription);
     formData.append("project", selectedProject); // Optional
     console.log(formData)
     try {
-      const newDocument = await documentsApi.uploadDocument(formData);
-      handleUploadSuccess(newDocument);
+      let response;
+
+      if (editingDocument) {
+        // Update existing document
+        response = await documentsApi.updateDocument(editingDocument._id, formData);
+      } else {
+        // Upload new document
+        response = await documentsApi.uploadDocument(formData);
+      }
+  
+      handleUploadSuccess(response);
+      // const newDocument = await documentsApi.
+      // uploadDocument(formData);
+      // const newDocument = await documentsApi.updateDocument(id,formData)
+      // handleUploadSuccess(newDocument);
     } catch (err) {
       console.error("Failed to upload document:", err);
       setError("Failed to upload document. Please try again later.");
@@ -123,6 +142,7 @@ const ProjectDetail = () => {
           createdAt: new Date().toISOString(),
         };
         updatedNotes = [...project.notes, newNote];
+         
       }
   
       const updatedProj = await projectsApi.updateProject(project.id, {
@@ -141,6 +161,29 @@ const ProjectDetail = () => {
       setError("Failed to save note. Please try again later.");
     }
   };
+  // Handle document deletion
+const handleDeleteDocument = async (docId) => {
+  if (!window.confirm("Are you sure you want to delete this document?")) return;
+
+  try {
+    await documentsApi.deleteDocument(docId);
+    setReloadDocuments(prev => !prev); // trigger document list refresh
+  } catch (err) {
+    console.error("Failed to delete document:", err);
+    setError("Failed to delete document. Please try again later.");
+  }
+};
+
+// Handle document edit (basic name/description update)
+const handleEditDocumentClick = (doc) => {
+  setEditingDocument(doc);
+  setEditDocName(doc.name);
+  setEditDocDescription(doc.editDocDescription);
+  setIsAddDocumentModalOpen(true)
+};
+
+
+
   
   const handleDeleteProject = async () => {
     try {
@@ -156,9 +199,13 @@ const ProjectDetail = () => {
       setLoading(false);
     }
   };
+
+
   const handleDownloadDocument = async (documentId, filename) => {
     try {
       const blob = await documentsApi.downloadDocument(documentId);
+
+
 
       // Create a blob URL and trigger download
       const url = window.URL.createObjectURL(new Blob([blob]));
@@ -586,12 +633,27 @@ const handleDeleteNote = async (noteId) => {
                               </p>
                             </div>
                           </div>
+                          
                           <button
                             onClick={() => handleDownloadDocument(doc._id, doc.name)}
                             className="text-sm text-blue-600 hover:text-blue-800"
                           >
                             Download
                           </button>
+                          <div className="flex space-x-2">
+                <button
+                  onClick={() => handleEditDocumentClick(doc)}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  <CiEdit size={20} />
+                </button>
+                <button
+                  onClick={() => handleDeleteDocument(doc._id)}
+                  className="text-red-600 hover:text-red-800 font-bold "
+                >
+                  <MdDelete size={20} />
+                </button>
+              </div>
                         </div>
                       </li>
                     ))}
@@ -647,13 +709,13 @@ const handleDeleteNote = async (noteId) => {
                   onClick={() => handleEditNote(note)}
                   className="text-blue-600 hover:text-blue-800"
                 >
-                  <CiEdit />
+                  <CiEdit size={20} />
                 </button>
                 <button
                   onClick={() => handleDeleteNote(note.id)}
-                  className="text-red-600 hover:text-red-800"
+                  className="text-red-600 hover:text-red-800 font-bold "
                 >
-                  <MdDelete />
+                  <MdDelete size={20} />
                 </button>
               </div>
             </div>
@@ -792,8 +854,9 @@ const handleDeleteNote = async (noteId) => {
                 </label>
                 <textarea
                   id="description"
-                  value={description} // Bind the value to state
-                  onChange={(e) => setDescription(e.target.value)} // Update state on change
+                  value={editDocDescription}// Bind the value to state
+                 
+                  onChange={(e) => setEditDocDescription(e.target.value)} // Update state on change
                   placeholder="Enter document description"
                   rows="3"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

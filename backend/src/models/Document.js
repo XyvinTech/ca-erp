@@ -140,4 +140,4 @@ DocumentSchema.post('save', async function () {
     }
 });
 
-module.exports = mongoose.model('Document', DocumentSchema); 
+module.exports = mongoose.model('Document', DocumentSchema);
