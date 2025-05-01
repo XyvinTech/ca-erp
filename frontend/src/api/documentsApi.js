@@ -1,10 +1,24 @@
 import api from './axios';
-
+/**
+ * Fetch tasks data
+ * @param {Object} params - Query parameters for fetching tasks
+ * @returns {Promise} Promise object containing tasks data
+ */
 export const documentsApi = {
     // Get all documents
-    getAllDocuments: async (params) => {
-        const response = await api.get('/documents', { params });
-        return response.data;
+  
+    getAllDocuments: async (filters = {}) => {
+        try {
+            // Convert filters object to query string
+            const query = new URLSearchParams(filters).toString();
+
+            // Make the GET request with query parameters
+            const response = await api.get(`/documents?${query}`);
+            return response.data;
+        } catch (error) {
+            console.error("Error fetching documents:", error);
+            throw error;
+        }
     },
 
     // Get document by ID
@@ -25,7 +39,11 @@ export const documentsApi = {
 
     // Update document metadata
     updateDocument: async (id, documentData) => {
-        const response = await api.put(`/documents/${id}`, documentData);
+        const response = await api.put(`/documents/${id}`, documentData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
         return response.data;
     },
 

@@ -4,7 +4,7 @@ const { ErrorResponse } = require('./errorHandler');
 // Function to validate request against a Joi schema
 const validate = (schema) => {
     return (req, res, next) => {
-        console.log(req.body)
+       
         const options = {
             abortEarly: false, // include all errors
             allowUnknown: true, // ignore unknown props

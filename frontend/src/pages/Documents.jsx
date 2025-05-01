@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { documents } from "../dummyData/documents";
 import { documentsApi } from "../api/documentsApi";
 import { fetchProjects } from "../api/projects";
+import { userApi } from "../api/userApi";
 // File type icons
 const getFileIcon = (type) => {
   if (type.includes("pdf")) {
@@ -107,9 +108,9 @@ const Documents = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [filters, setFilters] = useState({
-    type: "all",
-    project: "all",
-    uploadedBy: "all",
+    type: "",
+    project: "",
+    uploadedBy: "",
   });
   const [showConfirmDelete, setShowConfirmDelete] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
@@ -117,69 +118,56 @@ const Documents = () => {
   const [description, setDescription] = useState(""); // State for document description
   const [selectedProject, setSelectedProject] = useState("");
   const [projects, setProjects] = useState([]);
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        setLoading(true);
-        const [documentsRes, projectsRes] = await Promise.all([
-          documentsApi.getAllDocuments(),
-          fetchProjects()
-        ]);
-        console.log(documentsRes, "555555555", projectsRes)
-        setAllDocuments(documentsRes.data);
-        setFilteredDocuments(documentsRes.data);
-        setProjects(projectsRes.data); // Assuming response shape
-        setLoading(false);
-      } catch (err) {
-        console.error("Failed to load documents or projects:", err);
-        setError("Something went wrong while fetching data.");
-        setLoading(false);
-      }
-    };
+  const [currentPage, setCurrentPage] = useState(1);
+  const [documentsPerPage] = useState(10); // or 5, depending on what you want
+  const [users, setUsers] = useState([]);
+  const [paginations, setPaginations] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+  });
+  const fetchInitialData = async () => {
+    try {
+      setLoading(true);
+      const [documentsRes, projectsRes, usersRes] = await Promise.all([
+        documentsApi.getAllDocuments({ ...filters,search: searchTerm, page: currentPage, limit: 10 }),
+        fetchProjects(),
+        userApi.Allusers()
 
-    fetchInitialData();
-  }, []);
+      ]);
 
+      setAllDocuments(documentsRes);
+      console.log(documentsRes.total, "555554444444444445555")
+      setFilteredDocuments(documentsRes.data);
+      setUsers(usersRes.data?.data?.data || []);
+      setProjects(projectsRes.data); // Assuming response shape
+      console.log(allDocuments, "555555555")
+      setPaginations({
+        page: currentPage,
+        total: documentsRes.total,
+        limit: filteredDocuments.pagination?.prev?.limit || 10
 
-  useEffect(() => {
-    filterDocuments();
-  }, [searchTerm, filters, allDocuments]);
-
-  const filterDocuments = () => {
-    let filtered = [...allDocuments];
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (doc) =>
-          doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          doc.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      });
+      setLoading(false);
+    } catch (err) {
+      console.error("Failed to load documents or projects:", err);
+      setError("Something went wrong while fetching data.");
+      setLoading(false);
     }
-
-    // Filter by type
-    if (filters.type !== "all") {
-      filtered = filtered.filter((doc) => doc.type.includes(filters.type));
-    }
-
-    // Filter by project
-    if (filters.project !== "all") {
-      filtered = filtered.filter(
-        (doc) => doc.projectId === parseInt(filters.project)
-      );
-    }
-
-    // Filter by uploaded by
-    if (filters.uploadedBy !== "all") {
-      filtered = filtered.filter(
-        (doc) => doc.uploadedBy === parseInt(filters.uploadedBy)
-      );
-    }
-
-    setFilteredDocuments(filtered);
   };
 
+  const handlePageChanges = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
+  useEffect(() => {
+    fetchInitialData();
+  }, [filters, searchTerm,currentPage]);
+
+
+
   const handleSearchChange = (e) => {
+    console.log(e.target.value)
     setSearchTerm(e.target.value);
   };
 
@@ -236,20 +224,7 @@ const Documents = () => {
   };
 
 
-  // For demo, these would be fetched from API
-  const projectOptions = [
-    { id: 1, name: "Annual Audit 2023" },
-    { id: 2, name: "Tax Planning Q3" },
-    { id: 3, name: "Financial Due Diligence" },
-    { id: 4, name: "GST Compliance Review" },
-  ];
 
-  const userOptions = [
-    { id: 1, name: "John Doe" },
-    { id: 2, name: "Jane Smith" },
-    { id: 3, name: "Robert Johnson" },
-    { id: 4, name: "Emily Wilson" },
-  ];
   const handleDownloadDocument = async (documentId, filename) => {
     try {
       const blob = await documentsApi.downloadDocument(documentId);
@@ -285,8 +260,9 @@ const Documents = () => {
     const user = userOptions.find((u) => u.id === userId);
     return user ? user.name : "Unknown User";
   };
-
-  if (loading && allDocuments.length === 0) {
+  const totalPage = Math.ceil(paginations.total / paginations.limit);
+  const pages = Array.from({ length: totalPage }, (_, i) => i + 1);
+  if (loading && filteredDocuments.length === 0) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
@@ -390,11 +366,12 @@ const Documents = () => {
                 onChange={(e) => handleFilterChange("type", e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all">All Types</option>
-                <option value="pdf">PDF</option>
-                <option value="excel">Excel</option>
-                <option value="word">Word</option>
-                <option value="powerpoint">PowerPoint</option>
+                <option value="">All Types</option>
+              
+                <option value="application/pdf">PDF</option>
+                <option value="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">Excel</option>
+                <option value="application/vnd.openxmlformats-officedocument.wordprocessingml.document">Word</option>
+                <option value="application/vnd.openxmlformats-officedocument.presentationml.presentation">PowerPoint</option>
               </select>
             </div>
             <div className="w-full md:w-1/5">
@@ -410,8 +387,8 @@ const Documents = () => {
                 onChange={(e) => handleFilterChange("project", e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all">All Projects</option>
-                {projectOptions.map((project) => (
+                <option value="">All Projects</option>
+                {projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
                   </option>
@@ -433,9 +410,9 @@ const Documents = () => {
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all">All Users</option>
-                {userOptions.map((user) => (
-                  <option key={user.id} value={user.id}>
+                <option value="">All Users</option>
+                {users.map((user) => (
+                  <option key={user._id} value={user._id}>
                     {user.name}
                   </option>
                 ))}
@@ -596,6 +573,99 @@ const Documents = () => {
             </div>
           )}
         </div>
+        {/* Pagination Controls */}
+        <div className="px-6 py-4 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => handlePageChanges(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${currentPage === 1
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "text-blue-600 hover:text-blue-900 border border-gray-300"
+                  }`}
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => handlePageChanges(currentPage + 1)}
+                disabled={currentPage === totalPage}
+                className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${currentPage === totalPage
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "text-blue-600 hover:text-blue-900 border border-gray-300"
+                  }`}
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing{" "}
+                  <span className="font-medium">
+                    {(currentPage - 1) * paginations.limit + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-medium">
+                    {Math.min(currentPage * paginations.limit, paginations.total)}
+                  </span>{" "}
+                  of <span className="font-medium">{paginations.total}</span> results
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => handlePageChanges(1)}
+                    disabled={currentPage === 1}
+                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border text-sm font-medium ${currentPage === 1
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
+                      }`}
+                  >
+                    <span className="sr-only">First</span>
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                  {pages.map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChanges(page)}
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === currentPage
+                          ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                          : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => handlePageChanges(currentPage + 1)}
+                    disabled={currentPage === totalPage}
+                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border text-sm font-medium ${currentPage === totalPage
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
+                      }`}
+                  >
+                    <span className="sr-only">Next</span>
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+     
       </div>
 
       {/* Upload Document Modal */}

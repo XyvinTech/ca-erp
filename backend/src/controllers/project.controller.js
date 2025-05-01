@@ -69,7 +69,7 @@ exports.getProjects = async (req, res, next) => {
             })
             .populate({
                 path: 'assignedTo',
-                select: 'name email'
+                select: 'name email avatar'
             })
             .populate({
                 path: 'createdBy',
@@ -83,6 +83,30 @@ exports.getProjects = async (req, res, next) => {
                     select: 'name email',
                 },
             });;
+        // 🧠 Add completion stats for each project
+        const projectsWithStats = await Promise.all(projects.map(async (project) => {
+            const taskIds = project.tasks || [];
+            const totalTasks = taskIds.length;
+
+            let completedTasks = 0;
+            if (totalTasks > 0) {
+                completedTasks = await Task.countDocuments({
+                    _id: { $in: taskIds },
+                    status: 'completed',
+                });
+            }
+
+            const completionPercentage = totalTasks > 0
+                ? Math.round((completedTasks / totalTasks) * 100)
+                : 0;
+
+            const projectObj = project.toObject();
+            projectObj.totalTasks = totalTasks;
+            projectObj.completedTasks = completedTasks;
+            projectObj.completionPercentage = completionPercentage;
+
+            return projectObj;
+        }));
 
         // Pagination result
         const pagination = {};
@@ -106,7 +130,7 @@ exports.getProjects = async (req, res, next) => {
             count: projects.length,
             pagination,
             total,
-            data: projects,
+            data: projectsWithStats,
         });
     } catch (error) {
         next(error);
@@ -127,11 +151,11 @@ exports.getProject = async (req, res, next) => {
             })
             .populate({
                 path: 'assignedTo',
-                select: 'name email'
+                select: 'name email avatar'
             })
             .populate({
                 path: 'createdBy',
-                select: 'name email'
+                select: 'name email avatar'
             })
             .populate({
                 path: 'team',
@@ -161,7 +185,25 @@ exports.getProject = async (req, res, next) => {
         }
 
         const projectObject = project.toObject(); // Convert Mongoose doc to plain object
+        // 🧠 Calculate task completion stats
+        const taskIds = project.tasks; // array of ObjectId
+        const totalTasks = taskIds.length;
 
+        let completedTasks = 0;
+        if (totalTasks > 0) {
+            completedTasks = await Task.countDocuments({
+                _id: { $in: taskIds },
+                status: 'completed',
+            });
+        }
+
+        const completionPercentage = totalTasks > 0
+            ? Math.round((completedTasks / totalTasks) * 100)
+            : 0;
+
+        projectObject.totalTasks = totalTasks;
+        projectObject.completedTasks = completedTasks;
+        projectObject.completionPercentage = completionPercentage;
         // Remove budget if user is not admin or finance
         if (!['admin', 'finance'].includes(req.user.role)) {
             delete projectObject.budget;
@@ -349,7 +391,7 @@ exports.getProjectTasks = async (req, res, next) => {
             .sort({ dueDate: 1, priority: -1 })
             .populate({
                 path: 'assignedTo',
-                select: 'name email'
+                select: 'name email avatar'
             })
             .populate({
                 path: 'createdBy',

@@ -4,13 +4,13 @@ import { userApi } from "../api/userApi";
 import { createTask, updateTask } from "../api/tasks";
 import { projectsApi } from "../api/projectsApi"; // Assuming you have a project API
 
-const TaskForm = ({ onSuccess, onCancel, task = null }) => {
+const TaskForm = ({ projectIds, onSuccess, onCancel, task = null }) => {
   const [title, setTitle] = useState(task?.title || "");
   const [status, setStatus] = useState(task?.status || "pending");
   const [priority, setPriority] = useState(task?.priority?.charAt(0).toUpperCase() + task?.priority?.slice(1) || "Medium");
   const [assignedTo, setAssignedTo] = useState(task?.assignedTo?._id || "");
   const [dueDate, setDueDate] = useState(task?.dueDate ? task.dueDate.split("T")[0] : "");
-  const [projectId, setProjectId] = useState(task?.project?._id || "");
+  const [projectId, setProjectId] = useState(task?.project?._id || projectIds);
 
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -117,29 +117,32 @@ const TaskForm = ({ onSuccess, onCancel, task = null }) => {
         </div>
 
         {/* Project Dropdown */}
-        <div className="mb-4">
-          <label htmlFor="project" className="block text-sm font-medium text-gray-700">Project</label>
-          <select
-            id="project"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-            required
-          >
-            <option value="">Select a project</option>
-            {loadingProjects ? (
-              <option disabled>Loading...</option>
-            ) : projectError ? (
-              <option disabled>{projectError}</option>
-            ) : (
-              projects.map((proj) => (
-                <option key={proj._id} value={proj._id}>
-                  {proj.name}
-                </option>
-              ))
-            )}
-          </select>
-        </div>
+        {!projectIds && (
+          <div className="mb-4">
+            <label htmlFor="project" className="block text-sm font-medium text-gray-700">Project</label>
+            <select
+              id="project"
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              required
+            >
+              <option value="">Select a project</option>
+              {loadingProjects ? (
+                <option disabled>Loading...</option>
+              ) : projectError ? (
+                <option disabled>{projectError}</option>
+              ) : (
+                projects.map((proj) => (
+                  <option key={proj._id} value={proj._id}>
+                    {proj.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+        )}
+
 
         {/* Status Dropdown */}
         <div className="mb-4">
