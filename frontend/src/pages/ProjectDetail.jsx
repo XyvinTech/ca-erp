@@ -11,6 +11,7 @@ import ProjectTasks from "../components/ProjectTasks";
 import ProjectForm from "../components/ProjectForm";
 import { documentsApi } from "../api/documentsApi";
 import { projectsApi } from "../api";
+import ConfirmModal from "../components/settings/DeleteModal";
 
   const statusColors = {
     completed: "bg-green-100 text-green-800",
@@ -49,7 +50,8 @@ const ProjectDetail = () => {
   const [noteContent, setNoteContent] = useState(""); // State for the note content
   const [reloadProject, setReloadProject] = useState(false); 
   const [editingNoteId, setEditingNoteId] = useState(null); // Track which note is being edited
-
+  const [docToDelete, setDocToDelete] = useState(null);
+  const [noteToDelete, setNoteToDelete] = useState(null);
   useEffect(() => {
     const loadProject = async () => {
       try {
@@ -162,17 +164,17 @@ const ProjectDetail = () => {
     }
   };
   // Handle document deletion
-const handleDeleteDocument = async (docId) => {
-  if (!window.confirm("Are you sure you want to delete this document?")) return;
+  const handleDeleteDocument = async (docId) => {
+    if (!window.confirm("Are you sure you want to delete this document?")) return;
 
-  try {
-    await documentsApi.deleteDocument(docId);
-    setReloadDocuments(prev => !prev); // trigger document list refresh
-  } catch (err) {
-    console.error("Failed to delete document:", err);
-    setError("Failed to delete document. Please try again later.");
-  }
-};
+    try {
+      await documentsApi.updateDocument(docId, { deleted: true }); // Soft delete by setting `deleted` flag
+      setReloadDocuments(prev => !prev); // Refresh document list
+    } catch (err) {
+      console.error("Failed to delete document:", err);
+      setError("Failed to delete document. Please try again later.");
+    }
+  };
 
 // Handle document edit (basic name/description update)
 const handleEditDocumentClick = (doc) => {
@@ -188,7 +190,7 @@ const handleEditDocumentClick = (doc) => {
   const handleDeleteProject = async () => {
     try {
       setLoading(true);
-      await deleteProject(id);
+      await projectsApi.updateProject(id, { deleted: true });
       setLoading(false);
       navigate("/projects", {
         state: { message: "Project deleted successfully" },
@@ -229,20 +231,22 @@ const handleEditDocumentClick = (doc) => {
   // You could also store the editing note's ID separately if you want to distinguish between Add vs Edit mode
 };
 
-const handleDeleteNote = async (noteId) => {
-  if (!window.confirm("Are you sure you want to delete this note?")) return;
+  const handleDeleteNote = async (noteId) => {
+    if (!window.confirm("Are you sure you want to delete this note?")) return;
 
-  try {
-    const updatedNotes = project.notes.filter((n) => n.id !== noteId);
-    const updatedProj = await projectsApi.updateProject(project.id, {
-      notes: updatedNotes,
-    });
-    setReloadProject(prev => !prev);
-  } catch (err) {
-    console.error("Failed to delete note:", err);
-    setError("Failed to delete note. Please try again later.");
-  }
-};
+    try {
+      const updatedNotes = project.notes.map((note) =>
+        note.id === noteId ? { ...note, deleted: true } : note
+      );
+      await projectsApi.updateProject(project.id, {
+        notes: updatedNotes,
+      });
+      setReloadProject(prev => !prev);
+    } catch (err) {
+      console.error("Failed to delete note:", err);
+      setError("Failed to delete note. Please try again later.");
+    }
+  };
 
 
 
@@ -605,7 +609,7 @@ const handleDeleteNote = async (noteId) => {
               {project.documents?.length > 0 ? (
                 <div className="bg-gray-50 rounded-lg overflow-hidden">
                   <ul className="divide-y divide-gray-200">
-                    {project.documents.map((doc) => (
+                    {project.documents?.filter(doc => !doc.deleted).map((doc) => (
                       <li key={doc._id} className="p-4 hover:bg-gray-100">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
@@ -648,7 +652,7 @@ const handleDeleteNote = async (noteId) => {
                   <CiEdit size={20} />
                 </button>
                 <button
-                  onClick={() => handleDeleteDocument(doc._id)}
+                  onClick={() => setDocToDelete(doc)}
                   className="text-red-600 hover:text-red-800 font-bold "
                 >
                   <MdDelete size={20} />
@@ -688,7 +692,7 @@ const handleDeleteNote = async (noteId) => {
 
     {project.notes?.length > 0 ? (
       <div className="space-y-4">
-        {project.notes.map((note) => (
+                  {project.notes.filter(note => !note.deleted).map((note) => (
           <div
             key={note.id}
             className="bg-gray-50 rounded-lg p-4 border border-gray-200"
@@ -712,11 +716,11 @@ const handleDeleteNote = async (noteId) => {
                   <CiEdit size={20} />
                 </button>
                 <button
-                  onClick={() => handleDeleteNote(note.id)}
-                  className="text-red-600 hover:text-red-800 font-bold "
-                >
-                  <MdDelete size={20} />
-                </button>
+  onClick={() => setNoteToDelete(note)}
+  className="text-red-600 hover:text-red-800 font-bold"
+>
+  <MdDelete size={20} />
+</button>
               </div>
             </div>
           </div>
@@ -830,6 +834,12 @@ const handleDeleteNote = async (noteId) => {
                         required
                       />
                     </label>
+                    {file && (
+      <p className="mt-3 text-sm text-gray-800 font-medium">
+        Selected File: <span className="text-blue-700">{file.name}</span>
+      </p>
+    )}
+
 
                     {/* <input
                       type="file"
@@ -962,7 +972,43 @@ const handleDeleteNote = async (noteId) => {
             </div>
           </div>
         </div>
+
       )}
+      <ConfirmModal
+  isOpen={!!docToDelete}
+  onClose={() => setDocToDelete(null)}
+  onConfirm={async () => {
+    try {
+      await documentsApi.updateDocument(docToDelete._id, { deleted: true });
+      setDocToDelete(null);
+      setReloadDocuments(prev => !prev);
+    } catch (err) {
+      setError("Failed to delete document.");
+    }
+  }}
+  title="Confirm Delete Document"
+  message={`Are you sure you want to delete "${docToDelete?.name}"? This cannot be undone.`}
+/>
+<ConfirmModal
+  isOpen={!!noteToDelete}
+  onClose={() => setNoteToDelete(null)}
+  onConfirm={async () => {
+    try {
+      const updatedNotes = project.notes.map((note) =>
+        note.id === noteToDelete.id ? { ...note, deleted: true } : note
+      );
+      await projectsApi.updateProject(project.id, {
+        notes: updatedNotes,
+      });
+      setNoteToDelete(null);
+      setReloadProject(prev => !prev);
+    } catch (err) {
+      setError("Failed to delete note.");
+    }
+  }}
+  title="Delete Note"
+  message={`Are you sure you want to delete this note? This action cannot be undone.`}
+/>
     </div>
   );
 };

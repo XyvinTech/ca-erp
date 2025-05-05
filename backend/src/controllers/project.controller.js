@@ -19,7 +19,7 @@ exports.getProjects = async (req, res, next) => {
         const total = await Project.countDocuments();
 
         // Filtering
-        const filter = {};
+        const filter = { deleted: { $ne: true } };
         if (req.query.status) {
             filter.status = req.query.status;
         }
@@ -77,7 +77,7 @@ exports.getProjects = async (req, res, next) => {
             })
             .populate({
                 path: 'documents',
-                select: 'name fileUrl category uploadedBy createdAt',
+                select: 'name fileUrl category uploadedBy createdAt deleted',
                 populate: {
                     path: 'uploadedBy',
                     select: 'name email',
@@ -164,7 +164,8 @@ exports.getProject = async (req, res, next) => {
             })
             .populate({
                 path: 'documents',
-                select: 'name fileUrl category uploadedBy createdAt',
+                match: { deleted: false },
+                select: 'name fileUrl category uploadedBy createdAt deleted',
                 populate: {
                     path: 'uploadedBy',
                     select: 'name email',
@@ -178,7 +179,9 @@ exports.getProject = async (req, res, next) => {
         if (!project) {
             return next(new ErrorResponse(`Project not found with id of ${req.params.id}`, 404));
         }
-
+        if (project.deleted) {
+            return next(new ErrorResponse(`Project not found with id of ${req.params.id}`, 404));
+        }
         // Check access - only admin and assigned users can view
         if (req.user.role !== 'admin' && project.assignedTo.toString() !== req.user.id.toString()) {
             return next(new ErrorResponse(`User not authorized to access this project`, 403));
@@ -376,7 +379,8 @@ exports.getProjectTasks = async (req, res, next) => {
         }
 
         // Filtering
-        const filter = { project: req.params.id };
+        const filter = { project: req.params.id, deleted: false };
+
         if (req.query.status) {
             filter.status = req.query.status;
         }

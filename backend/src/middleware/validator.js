@@ -150,10 +150,12 @@ const projectValidation = {
             startDate: Joi.date(),
             dueDate: Joi.date(),
             budget: Joi.number().min(0),
+            deleted: Joi.boolean(),
             notes: Joi.array().items(
                 Joi.object({
                     content: Joi.string().required(),
                     createdAt: Joi.date(),
+                    deleted: Joi.boolean(),
                 })
             ),
         }),
@@ -190,6 +192,7 @@ const taskValidation = {
             dueDate: Joi.date(),
             estimatedHours: Joi.number().min(0),
             parent: Joi.string(),
+            deleted: Joi.boolean(),
         }),
     }),
 
@@ -232,6 +235,7 @@ const documentValidation = {
             client: Joi.string(),
             tags: Joi.array().items(Joi.string()),
             isArchived: Joi.boolean(),
+            deleted: Joi.boolean(),
         }),
     }),
 };
