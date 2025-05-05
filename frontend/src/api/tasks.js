@@ -7,179 +7,22 @@ import api from './axios';
  */
 export const fetchTasks = async (filters = {}) => {
     try {
-        // Create a query string from the filters object
         const query = new URLSearchParams(filters).toString();
 
-        // Fetch tasks from the backend with the constructed query string
         const response = await api.get(`/tasks?${query}`);
+        
         return {
-            tasks: response.data
+            tasks: response.data.data, // ✅ This is the array of tasks
+            pagination: response.data.pagination,
+            total: response.data.total,
+            team: response.data.team // if this exists
         };
-
-        // For now, return mock data
-        // return {
-        //     tasks: [
-        //         {
-        //             id: "1",
-        //             title: "Prepare GST Filing for Reliance Industries",
-        //             description:
-        //                 "Compile and verify all GST invoices, prepare GSTR-1 and GSTR-3B for Q1.",
-        //             status: "Completed",
-        //             project: { id: "1", name: "GST Compliance 2023-24" },
-        //             priority: "High",
-        //             assignedTo: { id: "1", name: "Aditya Sharma", avatar: null },
-        //             dueDate: "2023-07-15",
-        //             estimatedHours: 8,
-        //             tags: ["GST", "Taxation"],
-        //         },
-        //         {
-        //             id: "2",
-        //             title: "Income Tax Audit for Tata Consultancy",
-        //             description:
-        //                 "Conduct comprehensive income tax audit as per Section 44AB for FY 2022-23.",
-        //             status: "In Progress",
-        //             project: { id: "2", name: "Tax Audit 2023" },
-        //             priority: "High",
-        //             assignedTo: { id: "2", name: "Priya Patel", avatar: null },
-        //             dueDate: "2023-08-05",
-        //             estimatedHours: 16,
-        //             tags: ["Income Tax", "Audit"],
-        //         },
-        //         {
-        //             id: "3",
-        //             title: "Financial Statements Preparation",
-        //             description:
-        //                 "Prepare balance sheet, profit & loss statement, and cash flow statement for Infosys Ltd.",
-        //             status: "Completed",
-        //             project: { id: "3", name: "Annual Compliance 2022-23" },
-        //             priority: "Medium",
-        //             assignedTo: { id: "3", name: "Vikram Mehta", avatar: null },
-        //             dueDate: "2023-07-20",
-        //             estimatedHours: 10,
-        //             tags: ["Financial Statements", "Compliance"],
-        //         },
-        //         {
-        //             id: "4",
-        //             title: "TDS Return Filing",
-        //             description:
-        //                 "Prepare and file quarterly TDS returns for Wipro Technologies.",
-        //             status: "Pending",
-        //             project: { id: "4", name: "TDS Compliance" },
-        //             priority: "Medium",
-        //             assignedTo: { id: "4", name: "Deepa Gupta", avatar: null },
-        //             dueDate: "2023-08-10",
-        //             estimatedHours: 6,
-        //             tags: ["TDS", "Compliance"],
-        //         },
-        //         {
-        //             id: "5",
-        //             title: "ROC Annual Filing",
-        //             description:
-        //                 "Prepare and file annual returns with Registrar of Companies for HCL Technologies.",
-        //             status: "In Progress",
-        //             project: { id: "5", name: "ROC Compliance" },
-        //             priority: "Medium",
-        //             assignedTo: { id: "5", name: "Neha Singh", avatar: null },
-        //             dueDate: "2023-08-01",
-        //             estimatedHours: 8,
-        //             tags: ["ROC", "Compliance"],
-        //         },
-        //         {
-        //             id: "6",
-        //             title: "Transfer Pricing Documentation",
-        //             description:
-        //                 "Prepare transfer pricing study and documentation for Mahindra & Mahindra.",
-        //             status: "Pending",
-        //             project: { id: "6", name: "International Taxation" },
-        //             priority: "High",
-        //             assignedTo: { id: "6", name: "Rajiv Malhotra", avatar: null },
-        //             dueDate: "2023-08-20",
-        //             estimatedHours: 15,
-        //             tags: ["Transfer Pricing", "International Tax"],
-        //         },
-        //         {
-        //             id: "7",
-        //             title: "Tax Planning for Ultra HNI",
-        //             description:
-        //                 "Develop comprehensive tax planning strategies for ultra-high net worth individual client.",
-        //             status: "Review",
-        //             project: { id: "7", name: "Wealth Management" },
-        //             priority: "High",
-        //             assignedTo: { id: "7", name: "Sanjay Kapoor", avatar: null },
-        //             dueDate: "2023-07-25",
-        //             estimatedHours: 12,
-        //             tags: ["Tax Planning", "Wealth Management"],
-        //         },
-        //         {
-        //             id: "8",
-        //             title: "Internal Audit for HDFC Bank",
-        //             description:
-        //                 "Conduct quarterly internal audit for HDFC Bank's treasury operations.",
-        //             status: "In Progress",
-        //             project: { id: "8", name: "Internal Audit Services" },
-        //             priority: "Medium",
-        //             assignedTo: { id: "8", name: "Ankit Jain", avatar: null },
-        //             dueDate: "2023-08-15",
-        //             estimatedHours: 20,
-        //             tags: ["Internal Audit", "Banking"],
-        //         },
-        //         {
-        //             id: "9",
-        //             title: "FEMA Compliance Review",
-        //             description:
-        //                 "Review FEMA compliance for foreign investments made by Bharti Airtel.",
-        //             status: "Pending",
-        //             project: { id: "6", name: "International Taxation" },
-        //             priority: "High",
-        //             assignedTo: { id: "1", name: "Aditya Sharma", avatar: null },
-        //             dueDate: "2023-09-10",
-        //             estimatedHours: 10,
-        //             tags: ["FEMA", "Compliance"],
-        //         },
-        //         {
-        //             id: "10",
-        //             title: "GST Reconciliation",
-        //             description:
-        //                 "Reconcile GST input credits with purchase records for Sun Pharma.",
-        //             status: "In Progress",
-        //             project: { id: "1", name: "GST Compliance 2023-24" },
-        //             priority: "Medium",
-        //             assignedTo: { id: "2", name: "Priya Patel", avatar: null },
-        //             dueDate: "2023-08-25",
-        //             estimatedHours: 8,
-        //             tags: ["GST", "Reconciliation"],
-        //         }
-        //     ],
-        //     projects: [
-        //         { id: "1", name: "GST Compliance 2023-24" },
-        //         { id: "2", name: "Tax Audit 2023" },
-        //         { id: "3", name: "Annual Compliance 2022-23" },
-        //         { id: "4", name: "TDS Compliance" },
-        //         { id: "5", name: "ROC Compliance" },
-        //         { id: "6", name: "International Taxation" },
-        //         { id: "7", name: "Wealth Management" },
-        //         { id: "8", name: "Internal Audit Services" }
-        //     ],
-        //     statuses: ["Pending", "In Progress", "Review", "Completed", "Cancelled"],
-        //     priorities: ["High", "Medium", "Low"],
-        //     team: [
-        //         { id: "1", name: "Aditya Sharma" },
-        //         { id: "2", name: "Priya Patel" },
-        //         { id: "3", name: "Vikram Mehta" },
-        //         { id: "4", name: "Deepa Gupta" },
-        //         { id: "5", name: "Neha Singh" },
-        //         { id: "6", name: "Rajiv Malhotra" },
-        //         { id: "7", name: "Sanjay Kapoor" },
-        //         { id: "8", name: "Ankit Jain" },
-        //         { id: "9", name: "Kavita Reddy" },
-        //         { id: "10", name: "Rahul Verma" }
-        //     ],
-        // };
     } catch (error) {
         console.error("Error fetching tasks:", error);
         throw error;
     }
 };
+
 
 /**
  * Fetch a single task by ID
@@ -340,12 +183,12 @@ export const deleteTask = async (id) => {
  */
 export const fetchCompletedTasksForInvoicing = async () => {
     try {
-        // In a real app, we would get from the backend
-        // const response = await api.get('/api/tasks/completed-for-invoicing');
-        // return response.data;
-
-        // For demo purposes, just filter the tasks that are completed but not invoiced
         const allTasks = await fetchTasks();
+
+        if (!Array.isArray(allTasks.tasks)) {
+            console.error("Tasks array is undefined or not an array:", allTasks.tasks);
+            throw new Error("Failed to load tasks for invoicing");
+        }
 
         const completedTasks = allTasks.tasks.filter(task =>
             task.status === 'completed' &&
@@ -361,6 +204,8 @@ export const fetchCompletedTasksForInvoicing = async () => {
         throw error;
     }
 };
+
+
 
 /**
  * Mark a task as invoiced
