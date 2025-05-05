@@ -21,6 +21,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 
 import Profile from "./pages/Profile";
+import ProjectCart from "./pages/ProjectCart";
 
 
 const queryClient = new QueryClient({
@@ -68,6 +69,7 @@ function App() {
                 {/* Other Routes */}
                 <Route path={ROUTES.DOCUMENTS} element={<Documents />} />
                 <Route path={ROUTES.FINANCE} element={<Finance />} />
+                <Route path={ROUTES.PROJECTCART} element={<ProjectCart />} />
                 <Route path={ROUTES.SETTINGS} element={<Settings />} />
 
                 <Route path={ROUTES.PROFILE} element={<Profile />} />

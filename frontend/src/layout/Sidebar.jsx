@@ -28,6 +28,7 @@ const navigation = [
     icon: CurrencyDollarIcon,
     roles: ["finance", "admin"],
   },
+  { name: "Project List", to: ROUTES.PROJECTCART, icon: BriefcaseIcon },
 ];
 
 const secondaryNavigation = [
@@ -48,9 +49,36 @@ const Sidebar = ({ onCloseMobile }) => {
   if (!user) return null;
 
   // Filter navigation items based on user role
-  const filteredNavigation = navigation.filter(
-    (item) => !item.roles || item.roles.includes(role || "staff")
-  );
+  // const filteredNavigation = navigation.filter(
+  //   (item) => !item.roles || item.roles.includes(role || "staff")
+  // );
+
+
+  const getVisibleNavigation = (role) => {
+    return navigation.filter((item) => {
+      switch (item.name) {
+        case "Dashboard":
+          return true;
+        case "Clients":
+        // case "Leads":
+        case "Documents":
+          return role === "admin" || role === "manager";
+        case "Projects":
+          return ["admin", "manager", "staff"].includes(role);
+        case "Tasks":
+          return ["admin", "manager", "staff"].includes(role);
+        case "Finance":
+          return ["admin", "manager", "finance"].includes(role);
+        // case "Project List":
+        //   return role === "finance";
+        default:
+          return false;
+      }
+    });
+  };
+
+  const filteredNavigation = getVisibleNavigation(role || "staff")
+
 
   return (
     <div className="h-full flex flex-col">

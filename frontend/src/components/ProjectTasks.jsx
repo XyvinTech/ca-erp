@@ -236,37 +236,36 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
         task={taskToEdit}
       />
 
-{showDeleteModal && (
-  <div className="fixed inset-0 z-10 overflow-y-auto backdrop-blur-sm bg-white/30 flex items-center justify-center">
-    <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-      <div className="px-6 py-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
-          Confirm Delete
-        </h3>
-        <p className="text-gray-500">
-          Are you sure you want to delete{" "}
-          <strong>{taskToDelete?.title}</strong>? This action cannot be undone.
-        </p>
-      </div>
-      <div className="px-6 py-4 border-t flex justify-end space-x-3">
-        <button
-          onClick={() => setShowDeleteModal(false)}
-          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleDeleteConfirmed}
-          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center space-x-2"
-        >
-          <MdDelete size={20} />
-          <span>Delete</span>
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-10 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="px-6 py-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Confirm Delete
+              </h3>
+              <p className="text-gray-500">
+                Are you sure you want to delete{" "}
+                <strong>{taskToDelete?.title}</strong>? This action cannot be undone.
+              </p>
+            </div>
+            <div className="px-6 py-4 border-t flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirmed}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center space-x-2"
+              >
+                <MdDelete size={20} />
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

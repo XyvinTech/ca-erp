@@ -27,7 +27,7 @@ const validate = (schema) => {
                 .map((details) => details.message)
                 .join(', ');
 
-            return next(new ErrorResponse("joi validation error:" + errorMessage, 400));
+            return next(new ErrorResponse(errorMessage, 400));
         }
 
         // Replace request with validated data
@@ -93,10 +93,10 @@ const clientValidation = {
             contactName: Joi.string().max(50),
             contactEmail: Joi.string().email().required(),
             contactPhone: Joi.string().max(20),
-            address: Joi.string().max(200).optional(),
-            website: Joi.string().optional(),
+            address: Joi.string().max(200),
+            website: Joi.string(),
             industry: Joi.string().max(50),
-            notes: Joi.string().optional(),
+            notes: Joi.string(),
             status: Joi.string().valid('active', 'inactive'),
         }),
     }),
@@ -110,10 +110,10 @@ const clientValidation = {
             contactName: Joi.string().max(50),
             contactEmail: Joi.string().email(),
             contactPhone: Joi.string().max(20),
-            address: Joi.string().max(200).optional(),
-            website: Joi.string().optional(),
+            address: Joi.string().max(200),
+            website: Joi.string(),
             industry: Joi.string().max(50),
-            notes: Joi.string().optional(),
+            notes: Joi.string(),
             status: Joi.string().valid('active', 'inactive'),
         }),
     }),
