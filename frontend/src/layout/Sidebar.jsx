@@ -28,6 +28,7 @@ const navigation = [
     icon: CurrencyDollarIcon,
     roles: ["finance", "admin"],
   },
+  { name: "Project List", to: ROUTES.PROJECTCART, icon: BriefcaseIcon },
 ];
 
 const secondaryNavigation = [
@@ -59,15 +60,17 @@ const Sidebar = ({ onCloseMobile }) => {
         case "Dashboard":
           return true;
         case "Clients":
-        case "Leads":
+        // case "Leads":
         case "Documents":
           return role === "admin" || role === "manager";
         case "Projects":
           return ["admin", "manager", "staff"].includes(role);
         case "Tasks":
-          return ["admin", "manager", "finance", "staff"].includes(role);
+          return ["admin", "manager", "staff"].includes(role);
         case "Finance":
           return ["admin", "manager", "finance"].includes(role);
+        case "Project List":
+          return role === "finance";
         default:
           return false;
       }

@@ -32,6 +32,7 @@ export const ROUTES = {
     CLIENTS: '/clients',
     LEADS: '/leads',
     PROJECTS: '/projects',
+    PROJECTCART:'/project-list',
     TASKS: '/tasks',
     DOCUMENTS: '/documents',
     PROFILE: '/profile',
