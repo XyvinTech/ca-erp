@@ -52,21 +52,28 @@ const Tasks = () => {
         fetchTasks({ ...filters, page: currentPage, limit: 10 }),
         fetchProjects(),
       ]);
-      setTasks(Array.isArray(tasksData.tasks.data) ? tasksData.tasks.data : []);
-      console.log(tasksData);
-      
+  
+      // Set tasks
+      setTasks(Array.isArray(tasksData.tasks) ? tasksData.tasks : []);
+      console.log("Tasks:", tasksData.tasks);
+  
+      // Set projects
       setProjects(Array.isArray(projectsData.data) ? projectsData.data : []);
+  
+      // Set team members
       setTeamMembers(
-        Array.isArray(tasksData.tasks.data)
-          ? tasksData.tasks.data.map((task) => task.assignedTo)
+        Array.isArray(tasksData.tasks)
+          ? tasksData.tasks.map((task) => task.assignedTo).filter(Boolean)
           : []
       );
+  
+      // Set pagination
       setPaginations({
         page: currentPage,
-        total: tasksData.tasks.total,
-        limit: tasksData.tasks.pagination?.prev?.limit || 10
-
+        total: tasksData.total,
+        limit: tasksData.pagination?.next?.limit || 10,
       });
+  
       setLoading(false);
     } catch (err) {
       console.error("Failed to fetch data:", err);
