@@ -70,7 +70,7 @@ function App() {
                 <Route path={ROUTES.FINANCE} element={<Finance />} />
                 <Route path={ROUTES.SETTINGS} element={<Settings />} />
 
-                <Route path={ROUTES.PROFILES} element={<Profile />} />
+                <Route path={ROUTES.PROFILE} element={<Profile />} />
 
 
                 {/* Default and 404 */}
