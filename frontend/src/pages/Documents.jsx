@@ -4,6 +4,8 @@ import { documents } from "../dummyData/documents";
 import { documentsApi } from "../api/documentsApi";
 import { fetchProjects } from "../api/projects";
 import { userApi } from "../api/userApi";
+import ConfirmModal from "../components/settings/DeleteModal";
+
 // File type icons
 const getFileIcon = (type) => {
   if (type.includes("pdf")) {
@@ -112,6 +114,7 @@ const Documents = () => {
     project: "",
     uploadedBy: "",
   });
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [showConfirmDelete, setShowConfirmDelete] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
   const [file, setFile] = useState(null); // State to hold the selected file
@@ -178,16 +181,34 @@ const Documents = () => {
     }));
   };
 
+  // const handleDeleteDocument = async (documentId) => {
+  //   try {
+  //     // Make the API call to delete the document (you need to replace this with the correct API call)
+  //     await documentsApi.deleteDocument(documentId); // Assuming the API method is called `deleteDocument`
+
+  //     // Optionally, update the UI after deleting (e.g., removing the document from the state)
+  //     // If you're managing the list of documents with state, you can filter out the deleted document.
+  //     setFilteredDocuments(filteredDocuments.filter(doc => doc.id !== documentId));
+
+  //     alert("Document deleted successfully.");
+  //   } catch (error) {
+  //     console.error("Failed to delete document:", error);
+  //     alert("Error deleting document. Please try again.");
+  //   }
+  // };
   const handleDeleteDocument = async (documentId) => {
     try {
-      // Make the API call to delete the document (you need to replace this with the correct API call)
-      await documentsApi.deleteDocument(documentId); // Assuming the API method is called `deleteDocument`
+      await documentsApi.deleteDocument(documentId);
+      setSuccessMessage("Document deleted successfully.");
 
-      // Optionally, update the UI after deleting (e.g., removing the document from the state)
-      // If you're managing the list of documents with state, you can filter out the deleted document.
-      setFilteredDocuments(filteredDocuments.filter(doc => doc.id !== documentId));
+      // Refresh the document list
+      fetchInitialData();
 
-      alert("Document deleted successfully.");
+      // Optionally reset modal state
+      setShowConfirmDelete(null);
+
+      // Clear message after a few seconds
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
       console.error("Failed to delete document:", error);
       alert("Error deleting document. Please try again.");
@@ -541,7 +562,8 @@ const Documents = () => {
                         </button>
                         <button
                           className="text-red-600 hover:text-red-900"
-                          onClick={() => handleDeleteDocument(document._id)}
+                          onClick={() => setShowConfirmDelete(document._id)}
+
                         >
                           <svg
                             className="w-5 h-5"
@@ -807,6 +829,18 @@ const Documents = () => {
 
       {/* Delete Confirmation Modal */}
       {showConfirmDelete && (
+        <ConfirmModal
+          isOpen={!!showConfirmDelete} // ✅ pass this
+          title="Confirm Delete"
+          message="Are you sure you want to delete this document? This action cannot be undone."
+          onClose={() => setShowConfirmDelete(null)} // renamed to match ConfirmModal prop
+          onConfirm={() => {
+            handleDeleteDocument(showConfirmDelete);
+            setShowConfirmDelete(null);
+          }}
+        />
+)}
+      {/* {showConfirmDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -832,7 +866,7 @@ const Documents = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

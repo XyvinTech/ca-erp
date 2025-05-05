@@ -6,6 +6,7 @@ const CreateTaskModal = ({
   onClose,
   onTaskCreated,
   projectId,
+  task,
 }) => {
   const modalRef = useRef(null);
 
@@ -39,6 +40,7 @@ const CreateTaskModal = ({
       >
         <TaskForm
           projectIds={projectId}
+          task={task}
           onSuccess={(task) => {
             onTaskCreated(task);
             onClose();

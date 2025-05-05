@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { fetchTasksByProject } from "../api/tasks";
+import { fetchTasksByProject, updateTask } from "../api/tasks";
 import { Link } from "react-router-dom";
 import CreateTaskModal from "./CreateTaskModal";
+import { CiEdit } from "react-icons/ci";
+import { MdDelete } from "react-icons/md";
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -22,29 +24,22 @@ const priorityColors = {
   low: "bg-green-100 text-green-800",
 };
 
-
-
 const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
   const [tasks, setTasks] = useState(initialTasks || []);
   const [loading, setLoading] = useState(!initialTasks);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [reload, setReload] = useState(false); // NEW
-  useEffect(() => {
-    // If tasks were provided as props, use them
-    // if (initialTasks) {
-    //   console.log(initialTasks, "4444+9dddd55555555555")
-    //   setTasks(initialTasks);
-    //   setLoading(false);
-    //   return;
-    // }
+  const [reload, setReload] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState(null);
 
-    // Otherwise, fetch tasks from the API
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
+
+  useEffect(() => {
     const loadTasks = async () => {
       try {
         setLoading(true);
         const response = await fetchTasksByProject(projectId);
-        console.log("Fetched response:", response);
         setTasks(Array.isArray(response.data) ? response.data : []);
         setLoading(false);
       } catch (err) {
@@ -55,13 +50,43 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
     };
 
     loadTasks();
-  }, [projectId, reload]); // Removed initialTasks from dependencies to avoid unnecessary reruns
+  }, [projectId, reload]);
 
-  const handleTaskCreated = (newTask) => {
-    setIsModalOpen(false); // Close modal after creating
-    setReload(true);
-    // setTasks((prevTasks) => [...prevTasks, newTask]);
-    // if (onTaskCreated) onTaskCreated(newTask);
+  const handleTaskCreated = () => {
+    setIsModalOpen(false);
+    setReload(!reload);
+  };
+
+  const handleEditTask = (task) => {
+    setTaskToEdit(task);
+    setIsModalOpen(true);
+  };
+
+  const confirmDeleteTask = (task) => {
+    setTaskToDelete(task);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirmed = async () => {
+    if (!taskToDelete) return;
+    try {
+      await updateTask(taskToDelete.id, { deleted: true });
+      setTasks((prev) => prev.filter((t) => t.id !== taskToDelete.id));
+    } catch (err) {
+      console.error("Failed to delete task:", err);
+      setError("Failed to delete task. Please try again.");
+    } finally {
+      setShowDeleteModal(false);
+      setTaskToDelete(null);
+    }
+  };
+
+  const formatStatus = (status) => {
+    if (!status) return "";
+    return status
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
 
   if (loading) {
@@ -80,25 +105,18 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
     );
   }
 
-  const formatStatus = (status) => {
-    if (!status) return "";
-    // Convert kebab-case to Title Case (e.g., "in-progress" to "In Progress")
-    return status
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
-
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="flex justify-between items-center p-6 border-b">
         <h2 className="text-xl font-semibold">Project Tasks</h2>
+        {tasks.length > 0 && (
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
           Add Task
         </button>
+         )}
       </div>
 
       {tasks.length === 0 ? (
@@ -106,7 +124,7 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
           <p>No tasks found for this project.</p>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             Create First Task
           </button>
@@ -116,46 +134,21 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Task
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Status
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Priority
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Assigned To
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Due Date
-                </th>
+                {["Task", "Status", "Priority", "Assigned To", "Due Date", "Actions"].map((head) => (
+                  <th
+                    key={head}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    {head}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {tasks.map((task) => (
+              {tasks.filter((task) => !task.deleted).map((task) => (
                 <tr key={task.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <Link
-                      to={`/tasks/${task.id}`}
-                      className="text-blue-600 hover:text-blue-900"
-                    >
+                    <Link to={`/tasks/${task.id}`} className="text-blue-600 hover:text-blue-900">
                       {task.title}
                     </Link>
                     <div className="mt-1 flex flex-wrap gap-1">
@@ -187,20 +180,13 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
                       {task.priority}
                     </span>
                   </td>
-
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
                         {task.assignedTo?.avatar ? (
                           <img
                             className="h-8 w-8 rounded-full"
-                            src={
-                              task?.assignedTo?.avatar
-                                ? `${import.meta.env.VITE_BASE_URL}${
-                                    task.assignedTo.avatar
-                                  }`
-                                : undefined
-                            }
+                            src={`${import.meta.env.VITE_BASE_URL}${task.assignedTo.avatar}`}
                             alt=""
                           />
                         ) : (
@@ -219,6 +205,22 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(task.dueDate).toLocaleDateString()}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEditTask(task)}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <CiEdit size={20} />
+                      </button>
+                      <button
+                        onClick={() => confirmDeleteTask(task)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <MdDelete size={20} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -231,7 +233,39 @@ const ProjectTasks = ({ projectId, tasks: initialTasks, onTaskCreated }) => {
         onClose={() => setIsModalOpen(false)}
         onTaskCreated={handleTaskCreated}
         projectId={projectId}
+        task={taskToEdit}
       />
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-10 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="px-6 py-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Confirm Delete
+              </h3>
+              <p className="text-gray-500">
+                Are you sure you want to delete{" "}
+                <strong>{taskToDelete?.title}</strong>? This action cannot be undone.
+              </p>
+            </div>
+            <div className="px-6 py-4 border-t flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirmed}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center space-x-2"
+              >
+                <MdDelete size={20} />
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

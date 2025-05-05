@@ -135,8 +135,10 @@ const ProjectSchema = new mongoose.Schema(
                     type: mongoose.Schema.Types.ObjectId,
                     ref: 'User', },
                 createdAt: { type: Date, default: Date.now },
-            },
+                deleted: { type: Boolean, default: false },
+            }, 
         ],
+        deleted: { type: Boolean, default: false },
     },
     {
         timestamps: true,

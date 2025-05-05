@@ -30,7 +30,7 @@ exports.getTasks = async (req, res, next) => {
         if (req.query.priority) {
             filter.priority = req.query.priority;
         }
-
+        filter.deleted = { $ne: true };
         // If user is not admin, only show tasks they are assigned to
         if (req.user.role !== 'admin') {
             filter.assignedTo = req.user.id;
@@ -124,7 +124,7 @@ exports.getTasks = async (req, res, next) => {
  */
 exports.getTask = async (req, res, next) => {
     try {
-        const task = await Task.findById(req.params.id)
+        const task = await Task.findOne({ _id: req.params.id, deleted: { $ne: true } })
             .populate({
                 path: 'project',
                 select: 'name projectNumber client',
