@@ -174,7 +174,7 @@ const Finance = () => {
       return false;
     return true;
   });
-
+  console.log(filteredTasks);
   // Get unique projects from tasks
   const projects = [
     ...new Map(
