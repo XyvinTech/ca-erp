@@ -27,12 +27,12 @@ const MainLayout = () => {
       <div className="md:hidden">
         {sidebarOpen && (
           <div
-            className="fixed inset-0 z-20 bg-black bg-opacity-50"
+            className="fixed inset-0 z-10 bg-black bg-opacity-50" // z-10 changed from z-20
             onClick={() => setSidebarOpen(false)}
           ></div>
         )}
         <div
-          className={`fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ${
+          className={`fixed inset-y-0 left-0 z-20 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >

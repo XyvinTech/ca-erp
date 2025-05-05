@@ -1,3 +1,4 @@
+// components/Modal.jsx
 import React, { Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
@@ -42,7 +43,8 @@ const Modal = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black bg-opacity-25" />
+          {/* Overlay background made transparent */}
+          <div className="fixed inset-0 bg-transparent" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -70,7 +72,6 @@ const Modal = ({
                       {title}
                     </Dialog.Title>
                   )}
-
                   {showCloseButton && (
                     <button
                       type="button"
