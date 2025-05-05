@@ -77,7 +77,7 @@ exports.getTasks = async (req, res, next) => {
             .sort(sort)
             .populate({
                 path: 'project',
-                select: 'name projectNumber'
+                select: 'name projectNumber budget'
             })
             .populate({
                 path: 'assignedTo',

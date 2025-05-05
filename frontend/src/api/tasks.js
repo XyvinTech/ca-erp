@@ -191,7 +191,7 @@ export const fetchCompletedTasksForInvoicing = async () => {
         }
 
         const completedTasks = allTasks.tasks.filter(task =>
-            task.status === 'Completed' &&
+            task.status === 'completed' &&
             (!task.invoiceStatus || task.invoiceStatus === 'Not Invoiced')
         );
 

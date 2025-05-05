@@ -6,18 +6,18 @@ import {
 } from "../api/tasks";
 
 const statusColors = {
-  Pending: "bg-yellow-100 text-yellow-800",
-  "In Progress": "bg-blue-100 text-blue-800",
-  Review: "bg-purple-100 text-purple-800",
-  Completed: "bg-green-100 text-green-800",
-  Invoiced: "bg-green-100 text-green-800",
-  Cancelled: "bg-gray-100 text-gray-800",
+  pending: "bg-yellow-100 text-yellow-800",
+  "in-progress": "bg-blue-100 text-blue-800",
+  review: "bg-purple-100 text-purple-800",
+  completed: "bg-green-100 text-green-800",
+  invoiced: "bg-green-100 text-green-800",
+  cancelled: "bg-gray-100 text-gray-800",
 };
 
 const priorityColors = {
-  High: "bg-red-100 text-red-800",
-  Medium: "bg-orange-100 text-orange-800",
-  Low: "bg-green-100 text-green-800",
+  high: "bg-red-100 text-red-800",
+  medium: "bg-orange-100 text-orange-800",
+  low: "bg-green-100 text-green-800",
 };
 
 const Finance = () => {
@@ -45,7 +45,13 @@ const Finance = () => {
     try {
       setLoading(true);
       const data = await fetchCompletedTasksForInvoicing();
-      setTasks(data.tasks);
+      console.log('Tasks received from API:', data.tasks); // Debug log
+      // Transform tasks to include cost from project.budget
+      const transformedTasks = data.tasks.map(task => ({
+        ...task,
+        cost: task.project?.budget || 0 // Populate cost with project.budget
+      }));
+      setTasks(transformedTasks);
       setLoading(false);
     } catch (err) {
       console.error("Failed to fetch data:", err);
@@ -97,14 +103,12 @@ const Finance = () => {
       return;
     }
 
-    // Find the project and client for all selected tasks
     const selectedTasksData = tasks.filter((task) =>
       selectedTasks.includes(task.id)
     );
     const projectId = selectedTasksData[0]?.project?.id;
-    const clientName = selectedTasksData[0]?.project?.client?.name || "";
+    const clientName = selectedTasksData[0]?.project?.client?.name || "Unknown Client";
 
-    // Check if all selected tasks are from the same project
     const allSameProject = selectedTasksData.every(
       (task) => task.project?.id === projectId
     );
@@ -116,7 +120,6 @@ const Finance = () => {
       return;
     }
 
-    // Set the invoice data
     setInvoiceData({
       invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
       invoiceDate: new Date().toISOString().split("T")[0],
@@ -131,7 +134,6 @@ const Finance = () => {
     try {
       setLoading(true);
 
-      // Mark each selected task as invoiced
       for (const taskId of selectedTasks) {
         await markTaskAsInvoiced(taskId, {
           invoiceNumber: invoiceData.invoiceNumber,
@@ -139,24 +141,16 @@ const Finance = () => {
         });
       }
 
-      // Reload tasks
       await loadTasks();
-
-      // Clear selection
       setSelectedTasks([]);
-
-      // Show success message
       setSuccessMessage(
         `Invoice ${invoiceData.invoiceNumber} created successfully for ${invoiceData.client}.`
       );
       setShowSuccessMessage(true);
-
-      // Close modal
       setShowInvoiceModal(false);
 
       setLoading(false);
 
-      // Auto-dismiss success message after 5 seconds
       setTimeout(() => {
         setShowSuccessMessage(false);
       }, 5000);
@@ -167,14 +161,15 @@ const Finance = () => {
     }
   };
 
-  // Apply filters to tasks
+  // Apply filters to tasks, ensuring only completed tasks are shown
   const filteredTasks = tasks.filter((task) => {
+    if (task.status !== 'completed') return false; // Hard filter for completed status
     if (filters.project && task.project?.id !== filters.project) return false;
-    if (filters.assignedTo && task.assignedTo?.id !== filters.assignedTo)
-      return false;
+    if (filters.assignedTo && task.assignedTo?._id !== filters.assignedTo) return false;
     return true;
   });
-  console.log(filteredTasks);
+  console.log('Filtered tasks (after status filter):', filteredTasks); // Debug log
+
   // Get unique projects from tasks
   const projects = [
     ...new Map(
@@ -189,22 +184,23 @@ const Finance = () => {
   const teamMembers = [
     ...new Map(
       tasks.map((task) => [
-        task.assignedTo?.id,
-        { id: task.assignedTo?.id, name: task.assignedTo?.name },
+        task.assignedTo?._id,
+        { id: task.assignedTo?._id, name: task.assignedTo?.name },
       ])
     ).values(),
-  ].filter((member) => member.id);
+  ].filter((member) => member.id && member.name);
+  console.log('Team members for filter:', teamMembers); // Debug log
 
   // Calculate totals
   const selectedTasksData = tasks.filter((task) =>
     selectedTasks.includes(task.id)
   );
   const totalAmount = selectedTasksData.reduce(
-    (sum, task) => sum + (Number(task.cost) || 0),
+    (sum, task) => sum + (Number(task.cost || 0)),
     0
   );
   const totalHours = selectedTasksData.reduce(
-    (sum, task) => sum + (Number(task.actualHours || task.estimatedHours) || 0),
+    (sum, task) => sum + (Number(task.actualHours || task.estimatedHours || 0)),
     0
   );
 
@@ -475,14 +471,14 @@ const Finance = () => {
                           <div className="text-sm text-gray-500 flex mt-1">
                             <span
                               className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                statusColors[task.status]
+                                statusColors[task.status] || "bg-gray-100 text-gray-800"
                               }`}
                             >
                               {task.status}
                             </span>
                             <span
                               className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                priorityColors[task.priority]
+                                priorityColors[task.priority] || "bg-gray-100 text-gray-800"
                               }`}
                             >
                               {task.priority}
@@ -550,7 +546,7 @@ const Finance = () => {
               className="hidden sm:inline-block sm:align-middle sm:h-screen"
               aria-hidden="true"
             >
-              &#8203;
+              ​
             </span>
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
