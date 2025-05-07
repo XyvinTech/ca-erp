@@ -676,7 +676,7 @@ const UpcomingDeadlines = ({ deadlines }) => {
 };
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user,role } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     clients: { count: 0, change: 0 },
@@ -695,291 +695,233 @@ const Dashboard = () => {
     queryKey: ["dashboardData"],
     queryFn: fetchDashboardData,
     // Sample data for testing
-    initialData: {
-      stats: {
-        totalProjects: {
-          value: 12,
-          change: 8.5,
-          iconType: (
-            <svg
-              className="w-6 h-6 text-blue-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-              />
-            </svg>
-          ),
-          color: "bg-blue-100",
-        },
-        activeTasks: {
-          value: 48,
-          change: 12.3,
-          iconType: (
-            <svg
-              className="w-6 h-6 text-green-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
-          ),
-          color: "bg-green-100",
-        },
-        teamMembers: {
-          value: 16,
-          change: 0,
-          iconType: (
-            <svg
-              className="w-6 h-6 text-purple-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-              />
-            </svg>
-          ),
-          color: "bg-purple-100",
-        },
-        revenue: {
-          value: "$24,500",
-          change: -2.7,
-          iconType: (
-            <svg
-              className="w-6 h-6 text-yellow-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          ),
-          color: "bg-yellow-100",
-        },
-      },
-      projects: [
-        {
-          id: "1",
-          name: "Website Redesign",
-          status: "On Track",
-          progress: 75,
-          dueDate: "Aug 20, 2023",
-        },
-        {
-          id: "2",
-          name: "Mobile App Development",
-          status: "At Risk",
-          progress: 45,
-          dueDate: "Sep 15, 2023",
-        },
-        {
-          id: "3",
-          name: "Database Migration",
-          status: "Delayed",
-          progress: 30,
-          dueDate: "Jul 30, 2023",
-        },
-      ],
-      tasks: [
-        {
-          id: "1",
-          title: "Design Homepage",
-          status: "In Progress",
-          assignee: "John Doe",
-        },
-        {
-          id: "2",
-          title: "API Integration",
-          status: "In Progress",
-          assignee: "Jane Smith",
-        },
-        {
-          id: "3",
-          title: "User Testing",
-          status: "Pending",
-          assignee: "Mike Johnson",
-        },
-        {
-          id: "4",
-          title: "Documentation",
-          status: "Completed",
-          assignee: "Sarah Williams",
-        },
-        {
-          id: "5",
-          title: "Bug Fixes",
-          status: "Review",
-          assignee: "Alex Brown",
-        },
-        {
-          id: "6",
-          title: "Performance Testing",
-          status: "Pending",
-          assignee: "Lisa Green",
-        },
-        {
-          id: "7",
-          title: "Security Audit",
-          status: "Completed",
-          assignee: "Tom Wilson",
-        },
-      ],
-      activities: [
-        {
-          id: "1",
-          type: "task",
-          user: "John Doe",
-          action: 'completed "Design Homepage" task',
-          time: "2 hours ago",
-        },
-        {
-          id: "2",
-          type: "comment",
-          user: "Jane Smith",
-          action: 'commented on "API Integration" task',
-          time: "4 hours ago",
-        },
-        {
-          id: "3",
-          type: "project",
-          user: "Mike Johnson",
-          action: 'created "Mobile App" project',
-          time: "1 day ago",
-        },
-        {
-          id: "4",
-          type: "task",
-          user: "Sarah Williams",
-          action: 'assigned "Bug Fixes" to Alex',
-          time: "2 days ago",
-        },
-      ],
-      deadlines: [
-        {
-          id: "1",
-          title: "Complete API Documentation",
-          date: "Jul 28, 2023",
-          daysLeft: 0,
-          project: "Website Redesign",
-          projectId: "1",
-        },
-        {
-          id: "2",
-          title: "User Testing Phase 1",
-          date: "Jul 30, 2023",
-          daysLeft: 2,
-          project: "Mobile App Development",
-          projectId: "2",
-        },
-        {
-          id: "3",
-          title: "Server Migration",
-          date: "Aug 05, 2023",
-          daysLeft: 8,
-          project: "Database Migration",
-          projectId: "3",
-        },
-      ],
-    },
+    // initialData: {
+    //   stats: {
+    //     totalProjects: {
+    //       value: 12,
+    //       change: 8.5,
+    //       iconType: (
+    //         <svg
+    //           className="w-6 h-6 text-blue-600"
+    //           fill="none"
+    //           stroke="currentColor"
+    //           viewBox="0 0 24 24"
+    //         >
+    //           <path
+    //             strokeLinecap="round"
+    //             strokeLinejoin="round"
+    //             strokeWidth="2"
+    //             d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+    //           />
+    //         </svg>
+    //       ),
+    //       color: "bg-blue-100",
+    //     },
+    //     activeTasks: {
+    //       value: 48,
+    //       change: 12.3,
+    //       iconType: (
+    //         <svg
+    //           className="w-6 h-6 text-green-600"
+    //           fill="none"
+    //           stroke="currentColor"
+    //           viewBox="0 0 24 24"
+    //         >
+    //           <path
+    //             strokeLinecap="round"
+    //             strokeLinejoin="round"
+    //             strokeWidth="2"
+    //             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+    //           />
+    //         </svg>
+    //       ),
+    //       color: "bg-green-100",
+    //     },
+    //     teamMembers: {
+    //       value: 16,
+    //       change: 0,
+    //       iconType: (
+    //         <svg
+    //           className="w-6 h-6 text-purple-600"
+    //           fill="none"
+    //           stroke="currentColor"
+    //           viewBox="0 0 24 24"
+    //         >
+    //           <path
+    //             strokeLinecap="round"
+    //             strokeLinejoin="round"
+    //             strokeWidth="2"
+    //             d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+    //           />
+    //         </svg>
+    //       ),
+    //       color: "bg-purple-100",
+    //     },
+    //     revenue: {
+    //       value: "$24,500",
+    //       change: -2.7,
+    //       iconType: (
+    //         <svg
+    //           className="w-6 h-6 text-yellow-600"
+    //           fill="none"
+    //           stroke="currentColor"
+    //           viewBox="0 0 24 24"
+    //         >
+    //           <path
+    //             strokeLinecap="round"
+    //             strokeLinejoin="round"
+    //             strokeWidth="2"
+    //             d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+    //           />
+    //         </svg>
+    //       ),
+    //       color: "bg-yellow-100",
+    //     },
+    //   },
+    //   projects: [
+    //     {
+    //       id: "1",
+    //       name: "Website Redesign",
+    //       status: "On Track",
+    //       progress: 75,
+    //       dueDate: "Aug 20, 2023",
+    //     },
+    //     {
+    //       id: "2",
+    //       name: "Mobile App Development",
+    //       status: "At Risk",
+    //       progress: 45,
+    //       dueDate: "Sep 15, 2023",
+    //     },
+    //     {
+    //       id: "3",
+    //       name: "Database Migration",
+    //       status: "Delayed",
+    //       progress: 30,
+    //       dueDate: "Jul 30, 2023",
+    //     },
+    //   ],
+    //   tasks: [
+    //     {
+    //       id: "1",
+    //       title: "Design Homepage",
+    //       status: "In Progress",
+    //       assignee: "John Doe",
+    //     },
+    //     {
+    //       id: "2",
+    //       title: "API Integration",
+    //       status: "In Progress",
+    //       assignee: "Jane Smith",
+    //     },
+    //     {
+    //       id: "3",
+    //       title: "User Testing",
+    //       status: "Pending",
+    //       assignee: "Mike Johnson",
+    //     },
+    //     {
+    //       id: "4",
+    //       title: "Documentation",
+    //       status: "Completed",
+    //       assignee: "Sarah Williams",
+    //     },
+    //     {
+    //       id: "5",
+    //       title: "Bug Fixes",
+    //       status: "Review",
+    //       assignee: "Alex Brown",
+    //     },
+    //     {
+    //       id: "6",
+    //       title: "Performance Testing",
+    //       status: "Pending",
+    //       assignee: "Lisa Green",
+    //     },
+    //     {
+    //       id: "7",
+    //       title: "Security Audit",
+    //       status: "Completed",
+    //       assignee: "Tom Wilson",
+    //     },
+    //   ],
+    //   activities: [
+    //     {
+    //       id: "1",
+    //       type: "task",
+    //       user: "John Doe",
+    //       action: 'completed "Design Homepage" task',
+    //       time: "2 hours ago",
+    //     },
+    //     {
+    //       id: "2",
+    //       type: "comment",
+    //       user: "Jane Smith",
+    //       action: 'commented on "API Integration" task',
+    //       time: "4 hours ago",
+    //     },
+    //     {
+    //       id: "3",
+    //       type: "project",
+    //       user: "Mike Johnson",
+    //       action: 'created "Mobile App" project',
+    //       time: "1 day ago",
+    //     },
+    //     {
+    //       id: "4",
+    //       type: "task",
+    //       user: "Sarah Williams",
+    //       action: 'assigned "Bug Fixes" to Alex',
+    //       time: "2 days ago",
+    //     },
+    //   ],
+    //   deadlines: [
+    //     {
+    //       id: "1",
+    //       title: "Complete API Documentation",
+    //       date: "Jul 28, 2023",
+    //       daysLeft: 0,
+    //       project: "Website Redesign",
+    //       projectId: "1",
+    //     },
+    //     {
+    //       id: "2",
+    //       title: "User Testing Phase 1",
+    //       date: "Jul 30, 2023",
+    //       daysLeft: 2,
+    //       project: "Mobile App Development",
+    //       projectId: "2",
+    //     },
+    //     {
+    //       id: "3",
+    //       title: "Server Migration",
+    //       date: "Aug 05, 2023",
+    //       daysLeft: 8,
+    //       project: "Database Migration",
+    //       projectId: "3",
+    //     },
+    //   ],
+    // },
   });
 
+  if (dashboardLoading) {
+    return <div>Loading...</div>; 
+  }
   useEffect(() => {
-    // In a real app, this would fetch data from your API
-    // For now, we'll use static data for demonstration
-    setTimeout(() => {
-      setStats({
-        clients: { count: 42, change: 12 },
-        projects: { count: 18, change: 5 },
-        tasks: { count: 24, change: -3 },
-        documents: { count: 8, change: 7 },
-      });
-
-      setRecentTasks([
-        {
-          id: 1,
-          title: "Prepare ITR Filing",
-          client: "ABC Corp",
-          dueDate: "15/08/2023",
-          status: "In Progress",
-          assignedTo: "Jane Cooper",
-        },
-        {
-          id: 2,
-          title: "GST Reconciliation",
-          client: "XYZ Ltd",
-          dueDate: "18/08/2023",
-          status: "To-Do",
-          assignedTo: "Cody Fisher",
-        },
-        {
-          id: 3,
-          title: "Financial Audit Q2",
-          client: "Tech Innovators",
-          dueDate: "20/08/2023",
-          status: "Under Review",
-          assignedTo: "Esther Howard",
-        },
-        {
-          id: 4,
-          title: "Tax Planning Session",
-          client: "Global Traders",
-          dueDate: "25/08/2023",
-          status: "Completed",
-          assignedTo: "Jenny Wilson",
-        },
-      ]);
-
-      setComplianceTasks([
-        {
-          id: 1,
-          task: "GST Filing",
-          client: "ABC Corp",
-          dueDate: "20/08/2023",
-          status: "Due Soon",
-          priority: "High",
-        },
-        {
-          id: 2,
-          task: "TDS Return",
-          client: "XYZ Ltd",
-          dueDate: "25/08/2023",
-          status: "Due Soon",
-          priority: "Medium",
-        },
-        {
-          id: 3,
-          task: "Income Tax Audit",
-          client: "Tech Innovators",
-          dueDate: "10/09/2023",
-          status: "Upcoming",
-          priority: "High",
-        },
-      ]);
-
+  const fetchData = async () => {
+    try {
+      const response = await fetchDashboardData();
+      setStats(response.stats);
+      setRecentTasks(response.tasks);
+      setComplianceTasks(response.complianceTasks);
       setIsLoading(false);
-    }, 500);
-  }, []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  fetchData();
+}, []);
 
   if (isLoading) {
     return (
@@ -1059,34 +1001,52 @@ const Dashboard = () => {
           iconType={dashboardStats.teamMembers.iconType}
           color={dashboardStats.teamMembers.color}
         />
-        <StatCard
-          title="Monthly Revenue"
-          value={dashboardStats.revenue.value}
-          change={dashboardStats.revenue.change}
-          iconType={dashboardStats.revenue.iconType}
-          color={dashboardStats.revenue.color}
-        />
-      </div>
+        {["admin", "manager", "finance"].includes(role) && (
+              <StatCard
+                title="Monthly Revenue"
+                value={dashboardStats.revenue.value}
+                change={dashboardStats.revenue.change}
+                iconType={dashboardStats.revenue.iconType}
+                color={dashboardStats.revenue.color}
+              />
+        )}
+        </div>
+
 
       {/* Project progress and Task summary */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div>
           <h2 className="text-lg font-medium mb-4">Project Progress</h2>
-          {projects.map((project) => (
-            <ProjectProgress key={project.id} project={project} />
-          ))}
-          <div className="text-center mt-4">
-            <Link
-              to={ROUTES.PROJECTS}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              View all projects
-            </Link>
+
+          {projects.length > 0 ? (
+            <>
+              {projects.map((project) => (
+                <ProjectProgress key={project.id} project={project} />
+              ))}
+
+              {/* only show link when there actually are projects */}
+              <div className="text-center mt-4">
+                <Link
+                  to={ROUTES.PROJECTS}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  View all projects
+                </Link>
+              </div>
+            </>
+          ) : (
+          <div className="bg-white p-6 rounded-lg shadow text-center">
+            <p className="text-gray-500 italic">
+              No projects available.
+            </p>
           </div>
+        )}
         </div>
 
         <TaskSummary tasks={tasks} />
       </div>
+
+
 
       {/* Recent Activity and Upcoming Deadlines */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

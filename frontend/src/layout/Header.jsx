@@ -216,14 +216,17 @@ const Header = ({ onOpenSidebar }) => {
                     >
                       Your Profile
                     </Link>
-                    <Link
-                      to={ROUTES.SETTINGS}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      role="menuitem"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      Settings
-                    </Link>
+                    {["admin", "manager"].includes(user?.role) && (
+                      <Link
+                        to={ROUTES.SETTINGS}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        role="menuitem"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        Settings
+                      </Link>
+                    )}
+
                     <button
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

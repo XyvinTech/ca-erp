@@ -1,43 +1,116 @@
 import React from 'react';
 import api from "./axios";
+import { fetchProjects } from './projects';
+import { fetchCompletedTasksForInvoicing, fetchTasks } from './tasks';
+import { userApi } from './userApi';
 
 /**
  * Fetch comprehensive dashboard data including tasks, deadlines and projects
  * @returns {Promise} Promise object containing all dashboard data
  */
+
+async function fetchTasksWithCost() {
+    const { tasks, ...rest } = await fetchCompletedTasksForInvoicing();
+    const withCost = tasks.map(t => ({
+      ...t,
+      cost: t.project?.budget || 0
+    }));
+    return { tasks: withCost, ...rest };
+}
+
 export const fetchDashboardData = async () => {
     try {
         // In a real app, we would fetch from the backend
         // const response = await api.get('/api/dashboard');
         // return response.data;
 
-        // For now, return mock data
+
+        const calculateChange = (current, previous) => {
+            if (previous === 0) return current === 0 ? 0 : 100;
+            return ((current - previous) / previous) * 100;
+          };
+          
+//projects
+        const projects = await fetchProjects()
+        console.log(projects);
+        const currentProjects = projects.count;
+        const previousProject = 8
+        const changeProjects = calculateChange(currentProjects, previousProject);
+
+        const projectList = projects.data.map((pro) => ({
+            id: pro._id,
+            name: pro.name,
+            client: pro.client?.name || '—',
+            progress: pro.progress,
+            dueDate: pro.dueDate
+        }))
+
+
+        const tasksRes = await fetchTasks()
+        console.log(tasksRes.total);
+
+        const tasksByStatus = tasksRes.tasks.reduce((acc, t) => {
+            const statusKey = t.status.charAt(0).toUpperCase() + t.status.slice(1);
+            const found     = acc.find(x => x.status === statusKey);
+            if (found) found.count++;
+            else acc.push({ status: statusKey, count: 1 });
+            return acc;
+          }, []);
+
+
+        // const userResponse = await userApi.Allusers();        
+        // const teamMembers = userResponse.data.data.count;
+        // // console.log(teamMembers);
+        // const previousTeamMembers = 9;
+        // const changeTeam = calculateChange(teamMembers, previousTeamMembers);
+
+
+
+        const financeRes      = await fetchTasksWithCost();
+        const totalRevenue    = financeRes.tasks.reduce((sum, t) => sum + t.cost, 0);
+        const changeRevenue   = calculateChange(totalRevenue,  0);
+        // console.log(totalRevenue);
+        
+
+        
         return {
             stats: {
                 totalProjects: {
-                    value: 12,
-                    change: 8.5,
+                    value: currentProjects,
+                    change: changeProjects,
                     iconType: "folder",
                     color: "bg-blue-100",
                 },
                 activeTasks: {
-                    value: 48,
+                    value: tasksRes.total,
                     change: 12.3,
                     iconType: "task",
                     color: "bg-green-100",
                 },
+                // teamMembers: {
+                //     value: teamMembers,
+                //     change: changeTeam,
+                //     iconType: "team",
+                //     color: "bg-purple-100",
+                // },
                 teamMembers: {
-                    value: 8,
-                    change: 0,
+                    value: 5,
+                    change: 1,
                     iconType: "team",
                     color: "bg-purple-100",
                 },
                 revenue: {
-                    value: "$125,600",
-                    change: 5.2,
+                    value: `$${totalRevenue}`,
+                    change: changeRevenue,
                     iconType: "money",
                     color: "bg-yellow-100",
-                }
+                },
+                // revenue: {
+                //     value: `$45`,
+                //     change: 2.4,
+                //     iconType: "money",
+                //     color: "bg-yellow-100",
+                // }
             },
             recentTasks: [
                 {
@@ -81,42 +154,44 @@ export const fetchDashboardData = async () => {
                     assignedTo: "Sarah Wilson",
                 }
             ],
-            projects: [
-                {
-                    id: 1,
-                    name: "Audit 2023",
-                    client: "ABC Corp",
-                    progress: 65,
-                    dueDate: "2023-05-15"
-                },
-                {
-                    id: 2,
-                    name: "Tax Planning",
-                    client: "XYZ Industries",
-                    progress: 40,
-                    dueDate: "2023-06-30"
-                },
-                {
-                    id: 3,
-                    name: "Financial Restructuring",
-                    client: "Tech Solutions Inc.",
-                    progress: 85,
-                    dueDate: "2023-04-30"
-                },
-                {
-                    id: 4,
-                    name: "Compliance Review",
-                    client: "Global Traders Ltd.",
-                    progress: 20,
-                    dueDate: "2023-07-15"
-                }
-            ],
-            tasks: [
-                { status: "Completed", count: 128 },
-                { status: "In Progress", count: 45 },
-                { status: "Pending", count: 34 },
-                { status: "Delayed", count: 12 }
-            ],
+            // projects: [
+            //     {
+            //         id: 1,
+            //         name: "Audit 2023",
+            //         client: "ABC Corp",
+            //         progress: 65,
+            //         dueDate: "2023-05-15"
+            //     },
+            //     {
+            //         id: 2,
+            //         name: "Tax Planning",
+            //         client: "XYZ Industries",
+            //         progress: 40,
+            //         dueDate: "2023-06-30"
+            //     },
+            //     {
+            //         id: 3,
+            //         name: "Financial Restructuring",
+            //         client: "Tech Solutions Inc.",
+            //         progress: 85,
+            //         dueDate: "2023-04-30"
+            //     },
+            //     {
+            //         id: 4,
+            //         name: "Compliance Review",
+            //         client: "Global Traders Ltd.",
+            //         progress: 20,
+            //         dueDate: "2023-07-15"
+            //     }
+            // ],
+            projects:projectList,
+            // tasks: [
+            //     { status: "Completed", count: 128 },
+            //     { status: "In Progress", count: 45 },
+            //     { status: "Pending", count: 34 },
+            //     { status: "Delayed", count: 12 }
+            // ],
+            tasks:tasksByStatus,
             activities: [
                 {
                     id: 1,
