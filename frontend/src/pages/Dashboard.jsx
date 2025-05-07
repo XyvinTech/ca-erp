@@ -695,213 +695,213 @@ const Dashboard = () => {
     queryKey: ["dashboardData"],
     queryFn: fetchDashboardData,
     // Sample data for testing
-    // initialData: {
-    //   stats: {
-    //     totalProjects: {
-    //       value: 12,
-    //       change: 8.5,
-    //       iconType: (
-    //         <svg
-    //           className="w-6 h-6 text-blue-600"
-    //           fill="none"
-    //           stroke="currentColor"
-    //           viewBox="0 0 24 24"
-    //         >
-    //           <path
-    //             strokeLinecap="round"
-    //             strokeLinejoin="round"
-    //             strokeWidth="2"
-    //             d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-    //           />
-    //         </svg>
-    //       ),
-    //       color: "bg-blue-100",
-    //     },
-    //     activeTasks: {
-    //       value: 48,
-    //       change: 12.3,
-    //       iconType: (
-    //         <svg
-    //           className="w-6 h-6 text-green-600"
-    //           fill="none"
-    //           stroke="currentColor"
-    //           viewBox="0 0 24 24"
-    //         >
-    //           <path
-    //             strokeLinecap="round"
-    //             strokeLinejoin="round"
-    //             strokeWidth="2"
-    //             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-    //           />
-    //         </svg>
-    //       ),
-    //       color: "bg-green-100",
-    //     },
-    //     teamMembers: {
-    //       value: 16,
-    //       change: 0,
-    //       iconType: (
-    //         <svg
-    //           className="w-6 h-6 text-purple-600"
-    //           fill="none"
-    //           stroke="currentColor"
-    //           viewBox="0 0 24 24"
-    //         >
-    //           <path
-    //             strokeLinecap="round"
-    //             strokeLinejoin="round"
-    //             strokeWidth="2"
-    //             d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-    //           />
-    //         </svg>
-    //       ),
-    //       color: "bg-purple-100",
-    //     },
-    //     revenue: {
-    //       value: "$24,500",
-    //       change: -2.7,
-    //       iconType: (
-    //         <svg
-    //           className="w-6 h-6 text-yellow-600"
-    //           fill="none"
-    //           stroke="currentColor"
-    //           viewBox="0 0 24 24"
-    //         >
-    //           <path
-    //             strokeLinecap="round"
-    //             strokeLinejoin="round"
-    //             strokeWidth="2"
-    //             d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-    //           />
-    //         </svg>
-    //       ),
-    //       color: "bg-yellow-100",
-    //     },
-    //   },
-    //   projects: [
-    //     {
-    //       id: "1",
-    //       name: "Website Redesign",
-    //       status: "On Track",
-    //       progress: 75,
-    //       dueDate: "Aug 20, 2023",
-    //     },
-    //     {
-    //       id: "2",
-    //       name: "Mobile App Development",
-    //       status: "At Risk",
-    //       progress: 45,
-    //       dueDate: "Sep 15, 2023",
-    //     },
-    //     {
-    //       id: "3",
-    //       name: "Database Migration",
-    //       status: "Delayed",
-    //       progress: 30,
-    //       dueDate: "Jul 30, 2023",
-    //     },
-    //   ],
-    //   tasks: [
-    //     {
-    //       id: "1",
-    //       title: "Design Homepage",
-    //       status: "In Progress",
-    //       assignee: "John Doe",
-    //     },
-    //     {
-    //       id: "2",
-    //       title: "API Integration",
-    //       status: "In Progress",
-    //       assignee: "Jane Smith",
-    //     },
-    //     {
-    //       id: "3",
-    //       title: "User Testing",
-    //       status: "Pending",
-    //       assignee: "Mike Johnson",
-    //     },
-    //     {
-    //       id: "4",
-    //       title: "Documentation",
-    //       status: "Completed",
-    //       assignee: "Sarah Williams",
-    //     },
-    //     {
-    //       id: "5",
-    //       title: "Bug Fixes",
-    //       status: "Review",
-    //       assignee: "Alex Brown",
-    //     },
-    //     {
-    //       id: "6",
-    //       title: "Performance Testing",
-    //       status: "Pending",
-    //       assignee: "Lisa Green",
-    //     },
-    //     {
-    //       id: "7",
-    //       title: "Security Audit",
-    //       status: "Completed",
-    //       assignee: "Tom Wilson",
-    //     },
-    //   ],
-    //   activities: [
-    //     {
-    //       id: "1",
-    //       type: "task",
-    //       user: "John Doe",
-    //       action: 'completed "Design Homepage" task',
-    //       time: "2 hours ago",
-    //     },
-    //     {
-    //       id: "2",
-    //       type: "comment",
-    //       user: "Jane Smith",
-    //       action: 'commented on "API Integration" task',
-    //       time: "4 hours ago",
-    //     },
-    //     {
-    //       id: "3",
-    //       type: "project",
-    //       user: "Mike Johnson",
-    //       action: 'created "Mobile App" project',
-    //       time: "1 day ago",
-    //     },
-    //     {
-    //       id: "4",
-    //       type: "task",
-    //       user: "Sarah Williams",
-    //       action: 'assigned "Bug Fixes" to Alex',
-    //       time: "2 days ago",
-    //     },
-    //   ],
-    //   deadlines: [
-    //     {
-    //       id: "1",
-    //       title: "Complete API Documentation",
-    //       date: "Jul 28, 2023",
-    //       daysLeft: 0,
-    //       project: "Website Redesign",
-    //       projectId: "1",
-    //     },
-    //     {
-    //       id: "2",
-    //       title: "User Testing Phase 1",
-    //       date: "Jul 30, 2023",
-    //       daysLeft: 2,
-    //       project: "Mobile App Development",
-    //       projectId: "2",
-    //     },
-    //     {
-    //       id: "3",
-    //       title: "Server Migration",
-    //       date: "Aug 05, 2023",
-    //       daysLeft: 8,
-    //       project: "Database Migration",
-    //       projectId: "3",
-    //     },
-    //   ],
-    // },
+    initialData: {
+      stats: {
+        totalProjects: {
+          value: 12,
+          change: 8.5,
+          iconType: (
+            <svg
+              className="w-6 h-6 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+              />
+            </svg>
+          ),
+          color: "bg-blue-100",
+        },
+        activeTasks: {
+          value: 48,
+          change: 12.3,
+          iconType: (
+            <svg
+              className="w-6 h-6 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+          ),
+          color: "bg-green-100",
+        },
+        teamMembers: {
+          value: 16,
+          change: 0,
+          iconType: (
+            <svg
+              className="w-6 h-6 text-purple-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              />
+            </svg>
+          ),
+          color: "bg-purple-100",
+        },
+        revenue: {
+          value: "$24,500",
+          change: -2.7,
+          iconType: (
+            <svg
+              className="w-6 h-6 text-yellow-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          ),
+          color: "bg-yellow-100",
+        },
+      },
+      projects: [
+        {
+          id: "1",
+          name: "Website Redesign",
+          status: "On Track",
+          progress: 75,
+          dueDate: "Aug 20, 2023",
+        },
+        {
+          id: "2",
+          name: "Mobile App Development",
+          status: "At Risk",
+          progress: 45,
+          dueDate: "Sep 15, 2023",
+        },
+        {
+          id: "3",
+          name: "Database Migration",
+          status: "Delayed",
+          progress: 30,
+          dueDate: "Jul 30, 2023",
+        },
+      ],
+      tasks: [
+        {
+          id: "1",
+          title: "Design Homepage",
+          status: "In Progress",
+          assignee: "John Doe",
+        },
+        {
+          id: "2",
+          title: "API Integration",
+          status: "In Progress",
+          assignee: "Jane Smith",
+        },
+        {
+          id: "3",
+          title: "User Testing",
+          status: "Pending",
+          assignee: "Mike Johnson",
+        },
+        {
+          id: "4",
+          title: "Documentation",
+          status: "Completed",
+          assignee: "Sarah Williams",
+        },
+        {
+          id: "5",
+          title: "Bug Fixes",
+          status: "Review",
+          assignee: "Alex Brown",
+        },
+        {
+          id: "6",
+          title: "Performance Testing",
+          status: "Pending",
+          assignee: "Lisa Green",
+        },
+        {
+          id: "7",
+          title: "Security Audit",
+          status: "Completed",
+          assignee: "Tom Wilson",
+        },
+      ],
+      activities: [
+        {
+          id: "1",
+          type: "task",
+          user: "John Doe",
+          action: 'completed "Design Homepage" task',
+          time: "2 hours ago",
+        },
+        {
+          id: "2",
+          type: "comment",
+          user: "Jane Smith",
+          action: 'commented on "API Integration" task',
+          time: "4 hours ago",
+        },
+        {
+          id: "3",
+          type: "project",
+          user: "Mike Johnson",
+          action: 'created "Mobile App" project',
+          time: "1 day ago",
+        },
+        {
+          id: "4",
+          type: "task",
+          user: "Sarah Williams",
+          action: 'assigned "Bug Fixes" to Alex',
+          time: "2 days ago",
+        },
+      ],
+      deadlines: [
+        {
+          id: "1",
+          title: "Complete API Documentation",
+          date: "Jul 28, 2023",
+          daysLeft: 0,
+          project: "Website Redesign",
+          projectId: "1",
+        },
+        {
+          id: "2",
+          title: "User Testing Phase 1",
+          date: "Jul 30, 2023",
+          daysLeft: 2,
+          project: "Mobile App Development",
+          projectId: "2",
+        },
+        {
+          id: "3",
+          title: "Server Migration",
+          date: "Aug 05, 2023",
+          daysLeft: 8,
+          project: "Database Migration",
+          projectId: "3",
+        },
+      ],
+    },
   });
 
   if (dashboardLoading) {
