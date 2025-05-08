@@ -64,7 +64,7 @@ const UserManagement = () => {
     } catch (error) {
       console.error("Failed to add user:", error);
       const errorMessage = error.response?.data?.error || error.message || "Failed to add user";
-      toast.error(errorMessage);
+      // toast.error(errorMessage);
     }
   };
 
