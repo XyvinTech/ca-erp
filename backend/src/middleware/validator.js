@@ -88,19 +88,19 @@ const userValidation = {
 // Client validation schemas
 const clientValidation = {
     create: Joi.object({
-        body: Joi.object({
-            name: Joi.string().max(100).required(),
-            contactName: Joi.string().max(50),
-            contactEmail: Joi.string().email().required(),
-            contactPhone: Joi.string().max(20),
-            address: Joi.string().max(200),
-            website: Joi.string(),
-            industry: Joi.string().max(50),
-            notes: Joi.string(),
-            status: Joi.string().valid('active', 'inactive'),
-        }),
+      body: Joi.object({
+        name: Joi.string().max(100).required(),
+        contactName: Joi.string().max(50).allow(""),
+        contactEmail: Joi.string().email().required(),
+        contactPhone: Joi.string().max(20).allow(""),
+        address: Joi.string().max(200).allow(""),
+        website: Joi.string().allow(""),
+        industry: Joi.string().max(50).allow(""),
+        notes: Joi.string().allow(""),
+        status: Joi.string().valid("active", "inactive").allow(""),
+      }),
     }),
-
+  
     update: Joi.object({
         params: Joi.object({
             id: Joi.string().required(),
