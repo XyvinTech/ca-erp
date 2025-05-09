@@ -31,8 +31,15 @@ export const fetchDashboardData = async () => {
           };
           
 //projects
-        const projects = await fetchProjects()
-        console.log(projects);
+       const [projects, tasksRes, usersRes, financeRes] = await Promise.all([
+                fetchProjects(),
+                fetchTasks(),
+                userApi.Allusers(),
+                fetchTasksWithCost()
+            ]);
+
+
+        // console.log(projects);
         const currentProjects = projects.count;
         const previousProject = 8
         const changeProjects = calculateChange(currentProjects, previousProject);
@@ -46,8 +53,7 @@ export const fetchDashboardData = async () => {
         }))
 
 
-        const tasksRes = await fetchTasks()
-        console.log(tasksRes.total);
+        // console.log(tasksRes.total);
 
         const tasksByStatus = tasksRes.tasks.reduce((acc, t) => {
             const statusKey = t.status.charAt(0).toUpperCase() + t.status.slice(1);
@@ -58,17 +64,15 @@ export const fetchDashboardData = async () => {
           }, []);
 
 
-        // const userResponse = await userApi.Allusers();        
-        // const teamMembers = userResponse.data.data.count;
-        // // console.log(teamMembers);
-        // const previousTeamMembers = 9;
-        // const changeTeam = calculateChange(teamMembers, previousTeamMembers);
+       //team members
+       const currentMember = usersRes.data.data.count;
+    //    console.log(currentMember);
+        const changeMember = calculateChange(currentMember,  currentMember);
 
 
 
-        const financeRes      = await fetchTasksWithCost();
-        const totalRevenue    = financeRes.tasks.reduce((sum, t) => sum + t.cost, 0);
-        const changeRevenue   = calculateChange(totalRevenue,  0);
+        const totalRevenue = financeRes.tasks.reduce((sum, t) => sum + t.cost, 0);
+        const changeRevenue = calculateChange(totalRevenue,  0);
         // console.log(totalRevenue);
         
 
@@ -83,7 +87,7 @@ export const fetchDashboardData = async () => {
                 },
                 activeTasks: {
                     value: tasksRes.total,
-                    change: 12.3,
+                    change: changeMember,
                     iconType: "task",
                     color: "bg-green-100",
                 },
@@ -94,7 +98,7 @@ export const fetchDashboardData = async () => {
                 //     color: "bg-purple-100",
                 // },
                 teamMembers: {
-                    value: 5,
+                    value: currentMember,
                     change: 1,
                     iconType: "team",
                     color: "bg-purple-100",
