@@ -61,11 +61,16 @@ const UserManagement = () => {
       toast.success("User added successfully!");
       await loadUsers(); // Reload the users list
       setShowAddModal(false);
-    } catch (error) {
-      console.error("Failed to add user:", error);
-      const errorMessage = error.response?.data?.error || error.message || "Failed to add user";
+    } 
+    catch (error) {
+      console.error("Create user failed:", error.response?.data); 
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to add user";
       toast.error(errorMessage);
     }
+    
   };
 
   const handleEditUser = async (userData) => {

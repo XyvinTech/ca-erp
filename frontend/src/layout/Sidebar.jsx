@@ -36,7 +36,7 @@ const secondaryNavigation = [
   { name: "Settings", to: ROUTES.SETTINGS, icon: Cog6ToothIcon },
 ];
 
-const Sidebar = ({ onCloseMobile }) => {
+const Sidebar = ({ onCloseMobile ,projects = []}) => {
   const location = useLocation();
   const { user, role } = useAuth();
 
@@ -64,9 +64,11 @@ const Sidebar = ({ onCloseMobile }) => {
         case "Documents":
           return role === "admin" || role === "manager";
         case "Projects":
+          if (role === "staff" && projects.length === 0) return false;
           return ["admin", "manager", "staff"].includes(role);
-        case "Tasks":
-          return ["admin", "manager", "staff"].includes(role);
+          case "Tasks":
+            // if (role === "staff" && projects.length === 0) return false;
+            return ["admin", "manager", "staff"].includes(role);
         case "Finance":
           return ["admin", "manager", "finance"].includes(role);
         // case "Project List":
@@ -129,27 +131,34 @@ const Sidebar = ({ onCloseMobile }) => {
 
       {/* Secondary links and user info */}
       <div className="px-2 space-y-1 mb-2">
-        {secondaryNavigation.map((item) => (
-          <Link
-            key={item.name}
-            to={item.to}
-            onClick={onCloseMobile}
-            className={`${
-              isActive(item.to)
-                ? "bg-blue-50 text-blue-700 border-l-4 border-blue-500"
-                : "text-gray-700 hover:bg-gray-50"
-            } group flex items-center px-3 py-2 text-sm font-medium rounded-md`}
-          >
-            <item.icon
-              className={`${
-                isActive(item.to)
-                  ? "text-blue-500"
-                  : "text-gray-500 group-hover:text-gray-600"
-              } mr-3 flex-shrink-0 h-6 w-6`}
-              aria-hidden="true"
-            />
-            {item.name}
-          </Link>
+      {secondaryNavigation
+          .filter((item) => {
+            if (item.name === "Settings") {
+              return role === "admin" || role === "manager";
+            }
+            return true;
+          })
+          .map((item) => (
+              <Link
+                key={item.name}
+                to={item.to}
+                onClick={onCloseMobile}
+                className={`${
+                  isActive(item.to)
+                    ? "bg-blue-50 text-blue-700 border-l-4 border-blue-500"
+                    : "text-gray-700 hover:bg-gray-50"
+                } group flex items-center px-3 py-2 text-sm font-medium rounded-md`}
+              >
+                <item.icon
+                  className={`${
+                    isActive(item.to)
+                      ? "text-blue-500"
+                      : "text-gray-500 group-hover:text-gray-600"
+                  } mr-3 flex-shrink-0 h-6 w-6`}
+                  aria-hidden="true"
+                />
+                {item.name}
+              </Link>
         ))}
       </div>
 

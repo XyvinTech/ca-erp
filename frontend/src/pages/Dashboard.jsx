@@ -676,7 +676,7 @@ const UpcomingDeadlines = ({ deadlines }) => {
 };
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user,role } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     clients: { count: 0, change: 0 },
@@ -904,82 +904,24 @@ const Dashboard = () => {
     },
   });
 
+  if (dashboardLoading) {
+    return <div>Loading...</div>; 
+  }
   useEffect(() => {
-    // In a real app, this would fetch data from your API
-    // For now, we'll use static data for demonstration
-    setTimeout(() => {
-      setStats({
-        clients: { count: 42, change: 12 },
-        projects: { count: 18, change: 5 },
-        tasks: { count: 24, change: -3 },
-        documents: { count: 8, change: 7 },
-      });
-
-      setRecentTasks([
-        {
-          id: 1,
-          title: "Prepare ITR Filing",
-          client: "ABC Corp",
-          dueDate: "15/08/2023",
-          status: "In Progress",
-          assignedTo: "Jane Cooper",
-        },
-        {
-          id: 2,
-          title: "GST Reconciliation",
-          client: "XYZ Ltd",
-          dueDate: "18/08/2023",
-          status: "To-Do",
-          assignedTo: "Cody Fisher",
-        },
-        {
-          id: 3,
-          title: "Financial Audit Q2",
-          client: "Tech Innovators",
-          dueDate: "20/08/2023",
-          status: "Under Review",
-          assignedTo: "Esther Howard",
-        },
-        {
-          id: 4,
-          title: "Tax Planning Session",
-          client: "Global Traders",
-          dueDate: "25/08/2023",
-          status: "Completed",
-          assignedTo: "Jenny Wilson",
-        },
-      ]);
-
-      setComplianceTasks([
-        {
-          id: 1,
-          task: "GST Filing",
-          client: "ABC Corp",
-          dueDate: "20/08/2023",
-          status: "Due Soon",
-          priority: "High",
-        },
-        {
-          id: 2,
-          task: "TDS Return",
-          client: "XYZ Ltd",
-          dueDate: "25/08/2023",
-          status: "Due Soon",
-          priority: "Medium",
-        },
-        {
-          id: 3,
-          task: "Income Tax Audit",
-          client: "Tech Innovators",
-          dueDate: "10/09/2023",
-          status: "Upcoming",
-          priority: "High",
-        },
-      ]);
-
+  const fetchData = async () => {
+    try {
+      const response = await fetchDashboardData();
+      setStats(response.stats);
+      setRecentTasks(response.tasks);
+      setComplianceTasks(response.complianceTasks);
       setIsLoading(false);
-    }, 500);
-  }, []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  fetchData();
+}, []);
 
   if (isLoading) {
     return (
@@ -1059,34 +1001,52 @@ const Dashboard = () => {
           iconType={dashboardStats.teamMembers.iconType}
           color={dashboardStats.teamMembers.color}
         />
-        <StatCard
-          title="Monthly Revenue"
-          value={dashboardStats.revenue.value}
-          change={dashboardStats.revenue.change}
-          iconType={dashboardStats.revenue.iconType}
-          color={dashboardStats.revenue.color}
-        />
-      </div>
+        {["admin", "manager", "finance"].includes(role) && (
+              <StatCard
+                title="Monthly Revenue"
+                value={dashboardStats.revenue.value}
+                change={dashboardStats.revenue.change}
+                iconType={dashboardStats.revenue.iconType}
+                color={dashboardStats.revenue.color}
+              />
+        )}
+        </div>
+
 
       {/* Project progress and Task summary */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div>
           <h2 className="text-lg font-medium mb-4">Project Progress</h2>
-          {projects.map((project) => (
-            <ProjectProgress key={project.id} project={project} />
-          ))}
-          <div className="text-center mt-4">
-            <Link
-              to={ROUTES.PROJECTS}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              View all projects
-            </Link>
+
+          {projects.length > 0 ? (
+            <>
+              {projects.map((project) => (
+                <ProjectProgress key={project.id} project={project} />
+              ))}
+
+              {/* only show link when there actually are projects */}
+              <div className="text-center mt-4">
+                <Link
+                  to={ROUTES.PROJECTS}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  View all projects
+                </Link>
+              </div>
+            </>
+          ) : (
+          <div className="bg-white p-6 rounded-lg shadow text-center">
+            <p className="text-gray-500 italic">
+              No projects available.
+            </p>
           </div>
+        )}
         </div>
 
         <TaskSummary tasks={tasks} />
       </div>
+
+
 
       {/* Recent Activity and Upcoming Deadlines */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

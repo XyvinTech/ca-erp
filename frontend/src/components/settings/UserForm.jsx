@@ -64,14 +64,16 @@ const UserForm = ({ user = null, onSubmit, onCancel }) => {
           createData.role = ROLES.STAFF;
         }
         
-        response = await userApi.createUser(createData);
-        toast.success("User created successfully");
-      }
-      
-      if (response?.data) {
-        onSubmit(response.data);
-      } else {
-        throw new Error("Invalid response from server");
+      //   response = await userApi.createUser(createData);
+      //   toast.success("User created successfully");
+      // }
+
+      // if (response?.data) {
+      //   onSubmit(response.data);
+      // } else {
+      //   throw new Error("Invalid response from server");
+
+      onSubmit(createData);
       }
     } catch (error) {
       console.error("Error saving user:", error);
