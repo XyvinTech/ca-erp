@@ -3,6 +3,10 @@ const Project = require('../models/Project');
 const User = require('../models/User');
 const { ErrorResponse } = require('../middleware/errorHandler');
 const { logger } = require('../utils/logger');
+// const { wsInstance } = require('../server');
+// const WebSocket = require('ws');
+const websocketService = require('../utils/websocket');
+const Notification = require('../models/Notification');
 
 /**
  * @desc    Get all tasks
@@ -167,30 +171,30 @@ exports.getTask = async (req, res, next) => {
  */
 exports.createTask = async (req, res, next) => {
     try {
-        // Add user to req.body
         req.body.createdBy = req.user.id;
-        let project
-        // Check if project exists
+        let project;
+
+        // Validate project if provided
         if (req.body.project) {
             project = await Project.findById(req.body.project);
-            console.log(project,"88888888888888888888888")
             if (!project) {
                 return next(new ErrorResponse(`Project not found with id of ${req.body.project}`, 404));
             }
         }
 
-        // Check if assignedTo user exists
+        // Validate assigned user
         if (req.body.assignedTo) {
             const user = await User.findById(req.body.assignedTo);
             if (!user) {
                 return next(new ErrorResponse(`User not found with id of ${req.body.assignedTo}`, 404));
             }
         }
-        if (project && Array.isArray(project.team) && !project.team.some(memberId => memberId.toString() === req.body.assignedTo.toString())) {
+
+        // Add assigned user to project team if not already included
+        if (project && req.body.assignedTo && Array.isArray(project.team) && !project.team.some(memberId => memberId.toString() === req.body.assignedTo.toString())) {
             project.team.push(req.body.assignedTo);
             await project.save();
         }
-
 
         // Generate task number if not provided
         if (!req.body.taskNumber) {
@@ -198,9 +202,7 @@ exports.createTask = async (req, res, next) => {
             const year = date.getFullYear().toString().substr(-2);
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
 
-            const lastTask = await Task.findOne({})
-                .sort({ createdAt: -1 });
-
+            const lastTask = await Task.findOne({}).sort({ createdAt: -1 });
             let sequence = '001';
             if (lastTask && lastTask.taskNumber) {
                 const lastNumber = lastTask.taskNumber.split('-')[2];
@@ -208,20 +210,60 @@ exports.createTask = async (req, res, next) => {
                     sequence = (parseInt(lastNumber) + 1).toString().padStart(3, '0');
                 }
             }
-
             req.body.taskNumber = `TSK-${year}${month}-${sequence}`;
         }
 
+        // Create task
         const task = await Task.create(req.body);
-
-        // Log the task creation
         logger.info(`Task created: ${task.title} (${task._id}) by ${req.user.name} (${req.user._id})`);
+
+        // Create notification for assigned user
+        if (task.assignedTo) {
+            try {
+                const notification = await Notification.create({
+                    user: task.assignedTo,
+                    sender: req.user.id,
+                    title: `New Task Assigned: ${task.title}`,
+                    message: `You have been assigned a new task "${task.title}"`,
+                    type: 'TASK_ASSIGNED'
+                });
+
+                logger.info(`Notification created for user ${task.assignedTo} for task ${task._id}`);
+
+                // Send WebSocket notification
+                websocketService.sendToUser(task.assignedTo.toString(), {
+                    type: 'notification',
+                    data: {
+                        _id: notification._id,
+                        title: notification.title,
+                        message: notification.message,
+                        type: notification.type,
+                        read: notification.read,
+                        createdAt: notification.createdAt,
+                        sender: {
+                            _id: req.user._id,
+                            name: req.user.name,
+                            email: req.user.email
+                        },
+                        taskId: task._id,
+                        taskNumber: task.taskNumber,
+                        priority: task.priority,
+                        status: task.status,
+                        projectId: task.project?._id
+                    }
+                });
+            } catch (notificationError) {
+                logger.error(`Failed to create notification for task ${task._id}: ${notificationError.message}`);
+                // Note: We don't fail the task creation if notification fails
+            }
+        }
 
         res.status(201).json({
             success: true,
             data: task,
         });
     } catch (error) {
+        logger.error('Task creation error:', error);
         next(error);
     }
 };

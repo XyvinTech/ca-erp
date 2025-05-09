@@ -22,6 +22,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 import Profile from "./pages/Profile";
 import ProjectCart from "./pages/ProjectCart";
+import Notification from "./pages/Notification";
 
 
 const queryClient = new QueryClient({
@@ -49,7 +50,7 @@ function App() {
               {/* Protected routes */}
               <Route element={<MainLayout />}>
                 <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
-
+                <Route path="/notifications" element={<Notification />} />
                 {/* Client Routes */}
                 <Route path={ROUTES.CLIENTS} element={<ClientList />} />
                 <Route path="/clients/:id" element={<ClientDetails />} />

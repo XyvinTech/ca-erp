@@ -38,6 +38,7 @@ export const ROUTES = {
     PROFILE: '/profile',
     SETTINGS: '/settings',
     FINANCE: '/finance',
+    NOTIFICATIONS: '/notifications',
 
 
 

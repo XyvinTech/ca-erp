@@ -1,108 +1,56 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import useNotificationsStore from "../hooks/useNotificationsStore";
-import { useAuth } from "./AuthContext";
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import  useAuthStore  from '../hooks/useAuthStore';
 
-// Sample notification data
-const sampleNotifications = [
-  {
-    id: "1",
-    type: "task-assigned",
-    title: "New Task Assigned",
-    message: "You have been assigned to 'Design Homepage Layout' task",
-    link: "/tasks/123",
-    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-    isRead: false,
-  },
-  {
-    id: "2",
-    type: "comment",
-    title: "New Comment",
-    message:
-      "John Doe commented on 'Database Schema Design' task: 'Let's schedule a meeting to discuss this.'",
-    link: "/tasks/456",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    isRead: true,
-  },
-  {
-    id: "3",
-    type: "task-completed",
-    title: "Task Completed",
-    message: "Sarah Johnson completed 'API Integration' task",
-    link: "/tasks/789",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-    isRead: false,
-  },
-  {
-    id: "4",
-    type: "mention",
-    title: "You were mentioned",
-    message:
-      "Michael Brown mentioned you in a comment: '@username please review this when you have time'",
-    link: "/tasks/101",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(), // 1 day ago
-    isRead: false,
-  },
-  {
-    id: "5",
-    type: "system",
-    title: "System Maintenance",
-    message:
-      "The system will undergo maintenance on Sunday, June 4th from 2:00 AM to 4:00 AM UTC",
-    link: "/announcements",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-    isRead: true,
-  },
-];
-
-// Create the context
 const NotificationContext = createContext();
 
-// Custom hook to use the notification context
-export const useNotifications = () => {
-  return useContext(NotificationContext);
-};
-
 export const NotificationProvider = ({ children }) => {
-  const {
-    notifications,
-    unreadCount,
-    isLoading,
-    error,
-    fetchNotifications,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-  } = useNotificationsStore();
+  const [notifications, setNotifications] = useState([]);
+  const [socket, setSocket] = useState(null);
+  const { user } = useAuthStore();
 
-  const { isAuthenticated } = useAuth();
-
-  // Fetch notifications when authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchNotifications();
+    if (user) {
+      // Create WebSocket connection
+      const ws = new WebSocket('ws://localhost:5001');
+
+      ws.onopen = () => {
+        console.log('Connected to WebSocket server');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'notification') {
+            setNotifications(prev => [data, ...prev]);
+          }
+        } catch (error) {
+          console.error('Error processing WebSocket message:', error);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+
+      ws.onclose = () => {
+        console.log('Disconnected from WebSocket server');
+      };
+
+      setSocket(ws);
+
+      // Cleanup on unmount
+      return () => {
+        if (ws) {
+          ws.close();
+        }
+      };
     }
-  }, [isAuthenticated, fetchNotifications]);
-
-  // Set up polling for notifications when authenticated
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const intervalId = setInterval(() => {
-      fetchNotifications();
-    }, 60000); // Every minute
-
-    return () => clearInterval(intervalId);
-  }, [isAuthenticated, fetchNotifications]);
+  }, [user]);
 
   const value = {
     notifications,
-    unreadCount,
-    isLoading,
-    error,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-    fetchNotifications,
+    setNotifications,
+    socket
   };
 
   return (
@@ -112,4 +60,10 @@ export const NotificationProvider = ({ children }) => {
   );
 };
 
-export default NotificationProvider;
+export const useNotifications = () => {
+  const context = useContext(NotificationContext);
+  if (!context) {
+    throw new Error('useNotifications must be used within a NotificationProvider');
+  }
+  return context;
+};

@@ -12,7 +12,8 @@ const xss = require('xss-clean');
 const hpp = require('hpp');
 const path = require('path');
 const { config } = require('dotenv');
-
+const WebSocket = require('ws');
+const websocketService = require('./utils/websocket');
 // Load env vars
 config();
 
@@ -25,6 +26,7 @@ const taskRoutes = require('./routes/task.routes');
 const documentRoutes = require('./routes/document.routes');
 const financeRoutes = require('./routes/finance.routes');
 const settingsRoutes = require('./routes/settings.routes');
+const notificationRoutes = require('./routes/notification.routes');
 
 // Initialize express app
 const app = express();
@@ -70,6 +72,7 @@ app.use(hpp());
 // Set static folder
 app.use(express.static(path.join(__dirname, '../public')));
 
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -79,6 +82,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Swagger documentation
 swaggerDocs(app);
@@ -102,7 +106,38 @@ const server = app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
     console.log(`Server running on port ${PORT}`);
 });
+// Initialize WebSocket
+websocketService.init(server);
 
+// const wss = new WebSocket.Server({ server });
+// Store WebSocket server instance
+// const wsInstance = {
+//   getWss: () => wss
+// };
+// wss.on('connection', (ws, req) => {
+//   console.log('New WebSocket connection');
+
+//   // Handle incoming messages
+//   ws.on('message', (message) => {
+//     try {
+//       const parsedMessage = JSON.parse(message);
+//       // Broadcast the message to all connected clients
+//       wss.clients.forEach((client) => {
+//         if (client !== ws && client.readyState === WebSocket.OPEN) {
+//           client.send(JSON.stringify(parsedMessage));
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Error processing message:', error);
+//     }
+//   });
+// // Send initial connection success message
+// ws.send(JSON.stringify({ type: 'connection', message: 'Connected to WebSocket server' }))
+//   // Handle client disconnection
+//   ws.on('close', () => {
+//     console.log('Client disconnected');
+//   });
+// });
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
     logger.error(`Error: ${err.message}`);
@@ -110,4 +145,4 @@ process.on('unhandledRejection', (err) => {
     server.close(() => process.exit(1));
 });
 
-module.exports = server; 
+module.exports = { server }; 

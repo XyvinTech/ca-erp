@@ -3,7 +3,7 @@ import axios from "axios";
 import { userApi } from "../api/userApi";
 import { createTask, updateTask } from "../api/tasks";
 import { projectsApi } from "../api/projectsApi"; // Assuming you have a project API
-
+import { useNotifications } from "../context/NotificationContext";
 const TaskForm = ({ projectIds, onSuccess, onCancel, task = null }) => {
   const [title, setTitle] = useState(task?.title || "");
   const [status, setStatus] = useState(task?.status || "pending");
@@ -18,7 +18,7 @@ const TaskForm = ({ projectIds, onSuccess, onCancel, task = null }) => {
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [userError, setUserError] = useState(null);
   const [projectError, setProjectError] = useState(null);
-
+  const { socket } = useNotifications();
   const token = localStorage.getItem("auth_token");
 
   const handleSubmit = async (e) => {
@@ -52,6 +52,24 @@ const TaskForm = ({ projectIds, onSuccess, onCancel, task = null }) => {
         console.log(response.data, "888888888888888888++++++++++++++++++++")
       } else {
         response = await createTask(taskData, token);
+
+        // Send notification through WebSocket
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({
+            type: 'notification',
+            message: `New task "${title}" has been created`,
+            timestamp: new Date(),
+            taskId: response.data.data._id,
+            action: 'create_task',
+            data: {
+              title,
+              projectId,
+              assignedTo,
+              priority: priority.toLowerCase(),
+              status
+            }
+          }));
+        }
       }
 
       onSuccess(response.data);
