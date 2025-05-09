@@ -456,7 +456,7 @@ const ProjectProgress = ({ project }) => {
       <p className="text-xs text-gray-500 mb-2">Due {project.dueDate}</p>
       <div className="flex justify-between text-xs text-gray-500 mb-1">
         <span>Progress</span>
-        <span>{project.progress}%</span>
+        <span>{project.completionPercentage}%</span>
       </div>
       <div className="w-full h-2 bg-gray-200 rounded-full">
         <div
@@ -467,7 +467,7 @@ const ProjectProgress = ({ project }) => {
               ? "bg-yellow-500"
               : "bg-red-500"
           }`}
-          style={{ width: `${project.progress}%` }}
+          style={{ width: `${project.completionPercentage}%` }}
         ></div>
       </div>
     </div>
@@ -1020,7 +1020,7 @@ const Dashboard = () => {
 
           {projects.length > 0 ? (
             <>
-              {projects.map((project) => (
+              {projects.slice(0,3).map((project) => (
                 <ProjectProgress key={project.id} project={project} />
               ))}
 
