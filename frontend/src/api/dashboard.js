@@ -28,10 +28,10 @@ export const fetchDashboardData = async () => {
     };
 
     //projects
-    const [projects, tasksRes, usersRes, financeRes] = await Promise.all([
+    const [projects, tasksRes, financeRes] = await Promise.all([
       projectsApi.getAllProjects(),
       fetchTasks(),
-      userApi.Allusers(),
+      // userApi.Allusers(),
       fetchTasksWithCost(),
     ]);
 
@@ -59,9 +59,9 @@ export const fetchDashboardData = async () => {
       return acc;
     }, []);
 
-    //team members
-    const currentMember = usersRes.data.data.count;
-    const changeMember = calculateChange(currentMember, currentMember);
+    // team members
+    // const currentMember = usersRes.data.data.count;
+    // const changeMember = calculateChange(currentMember, currentMember);
 
     const totalRevenue = financeRes.tasks.reduce((sum, t) => sum + t.cost, 0);
     const changeRevenue = calculateChange(totalRevenue, 0);
@@ -77,13 +77,19 @@ export const fetchDashboardData = async () => {
         },
         activeTasks: {
           value: tasksRes.total,
-          change: changeMember,
+          change: 4,
           iconType: "task",
           color: "bg-green-100",
         },
        
-        teamMembers: {
-          value: currentMember,
+        // teamMembers: {
+        //   value: currentMember,
+        //   change: 1,
+        //   iconType: "team",
+        //   color: "bg-purple-100",
+        // },
+         teamMembers: {
+          value: 2,
           change: 1,
           iconType: "team",
           color: "bg-purple-100",
@@ -143,43 +149,9 @@ export const fetchDashboardData = async () => {
           assignedTo: "Sarah Wilson",
         },
       ],
-      // projects: [
-      //     {
-      //         id: 1,
-      //         name: "Audit 2023",
-      //         client: "ABC Corp",
-      //         progress: 65,
-      //         dueDate: "2023-05-15"
-      //     },
-      //     {
-      //         id: 2,
-      //         name: "Tax Planning",
-      //         client: "XYZ Industries",
-      //         progress: 40,
-      //         dueDate: "2023-06-30"
-      //     },
-      //     {
-      //         id: 3,
-      //         name: "Financial Restructuring",
-      //         client: "Tech Solutions Inc.",
-      //         progress: 85,
-      //         dueDate: "2023-04-30"
-      //     },
-      //     {
-      //         id: 4,
-      //         name: "Compliance Review",
-      //         client: "Global Traders Ltd.",
-      //         progress: 20,
-      //         dueDate: "2023-07-15"
-      //     }
-      // ],
+      
       projects: projectList,
-      // tasks: [
-      //     { status: "Completed", count: 128 },
-      //     { status: "In Progress", count: 45 },
-      //     { status: "Pending", count: 34 },
-      //     { status: "Delayed", count: 12 }
-      // ],
+      
       tasks: tasksByStatus,
       activities: [
         {

@@ -147,7 +147,7 @@ exports.getTask = async (req, res, next) => {
         }
 
         // Check access - only admin and assigned users can view
-        if (req.user.role !== 'admin' && task.assignedTo.toString() !== req.user.id.toString()) {
+        if (req.user.role !== 'admin' && req.user.role !== 'finance' && task.assignedTo.toString() !== req.user.id.toString()) {
             return next(new ErrorResponse(`User not authorized to access this task`, 403));
         }
 
