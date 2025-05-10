@@ -150,7 +150,7 @@ router.route('/')
 router.route('/allusers')
     .get(protect, Allusers)
 router.route('/:id')
-    .get(protect, authorize('admin'), getUser)
+    .get(protect,  getUser)
     /**
      * @swagger
      * /api/users/{id}:
@@ -194,7 +194,7 @@ router.route('/:id')
      *       403:
      *         description: Forbidden
      */
-    .put(protect, authorize('admin'), validate(userValidation.update), updateUser)
+    .put(protect, validate(userValidation.update), updateUser)
     /**
      * @swagger
      * /api/users/{id}:

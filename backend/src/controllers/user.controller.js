@@ -136,9 +136,9 @@ exports.updateUser = async (req, res, next) => {
         }
 
         // Don't allow role updates unless by an admin
-        if (req.body.role && req.user.role !== 'admin') {
-            return next(new ErrorResponse('Not authorized to update user role', 403));
-        }
+        // if (req.body.role && req.user.role !== 'admin') {
+        //     return next(new ErrorResponse('Not authorized to update user role', 403));
+        // }
 
         const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
             new: true,

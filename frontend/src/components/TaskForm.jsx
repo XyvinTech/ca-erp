@@ -54,23 +54,7 @@ const TaskForm = ({ projectIds, onSuccess, onCancel, task = null }) => {
         response = await createTask(taskData, token);
       }
 
-     const updatedProject = projects.find(project => project._id === projectId);
-    if (updatedProject) {
-      // Add or update the task in the project
-      const updatedTasks = task
-        ? updatedProject.tasks.map(t => (t._id === task._id ? response.data : t))  // Update the task if exists
-        : [...updatedProject.tasks, response.data];  // Add new task
-
-      // Update the project with the new list of tasks
-      const updatedProjectData = { ...updatedProject, tasks: updatedTasks };
-      setProjects(prevProjects => 
-        prevProjects.map(project =>
-          project._id === projectId ? updatedProjectData : project
-        )
-      );
-    }
-
-    onSuccess(response.data);
+      onSuccess(response.data);
     } catch (err) {
       console.error("Failed to create/update task", err);
       if (err.response?.status === 401) {
