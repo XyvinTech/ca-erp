@@ -28,10 +28,10 @@ export const fetchDashboardData = async () => {
     };
 
     //projects
-    const [projects, tasksRes, financeRes] = await Promise.all([
+    const [projects, tasksRes,usersRes, financeRes] = await Promise.all([
       projectsApi.getAllProjects(),
       fetchTasks(),
-      // userApi.Allusers(),
+      userApi.Allusers(),
       fetchTasksWithCost(),
     ]);
 
@@ -46,7 +46,7 @@ export const fetchDashboardData = async () => {
       client: pro.client?.name || "—",
       progress: pro.progress,
       completionPercentage: pro.completionPercentage,
-      dueDate: pro.dueDate,
+      dueDate: new Date(pro.dueDate).toLocaleDateString('en-GB'),
     }));
 
     // console.log(tasksRes.total);
@@ -60,12 +60,12 @@ export const fetchDashboardData = async () => {
     }, []);
 
     // team members
-    // const currentMember = usersRes.data.data.count;
-    // const changeMember = calculateChange(currentMember, currentMember);
+    const currentMember = usersRes.data.data.count;
+    const changeMember = calculateChange(currentMember, currentMember);
 
     const totalRevenue = financeRes.tasks.reduce((sum, t) => sum + t.cost, 0);
     const changeRevenue = calculateChange(totalRevenue, 0);
-    // console.log(totalRevenue);
+    console.log(totalRevenue);
 
     return {
       stats: {
@@ -82,18 +82,18 @@ export const fetchDashboardData = async () => {
           color: "bg-green-100",
         },
        
-        // teamMembers: {
-        //   value: currentMember,
-        //   change: 1,
-        //   iconType: "team",
-        //   color: "bg-purple-100",
-        // },
-         teamMembers: {
-          value: 2,
+        teamMembers: {
+          value: currentMember,
           change: 1,
           iconType: "team",
           color: "bg-purple-100",
         },
+        //  teamMembers: {
+        //   value: 2,
+        //   change: 1,
+        //   iconType: "team",
+        //   color: "bg-purple-100",
+        // },
         revenue: {
           value: `$${totalRevenue}`,
           change: changeRevenue,

@@ -31,9 +31,9 @@ exports.getProjects = async (req, res, next) => {
         }
 
         // If user is not admin, only show projects they are assigned to
-        if (req.user.role !== 'admin') {
-            filter.assignedTo = req.user.id;
-        }
+        // if (req.user.role !== 'admin' && req.user.role !== 'finance' && req.user.role !== 'manager' ) {
+        //     filter.assignedTo = req.user.id;
+        // }
 
         // Search
         if (req.query.search) {

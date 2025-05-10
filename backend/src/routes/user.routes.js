@@ -148,7 +148,7 @@ router.route('/')
  *         description: Forbidden
  */
 router.route('/allusers')
-    .get(protect, authorize('admin'), Allusers)
+    .get(protect, Allusers)
 router.route('/:id')
     .get(protect, authorize('admin'), getUser)
     /**
