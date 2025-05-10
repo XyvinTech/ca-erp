@@ -7,14 +7,7 @@ import { projectsApi } from "./projectsApi";
  * @returns {Promise} Promise object containing all dashboard data
  */
 
-async function fetchTasksWithCost() {
-  const { tasks, ...rest } = await fetchCompletedTasksForInvoicing();
-  const withCost = tasks.map((t) => ({
-    ...t,
-    cost: t.project?.budget || 0,
-  }));
-  return { tasks: withCost, ...rest };
-}
+
 
 export const fetchDashboardData = async () => {
   try {
@@ -28,16 +21,19 @@ export const fetchDashboardData = async () => {
     };
 
     //projects
-    const [projects, tasksRes,usersRes, financeRes] = await Promise.all([
+    const [projects, tasksRes,usersRes] = await Promise.all([
       projectsApi.getAllProjects(),
       fetchTasks(),
       userApi.Allusers(),
-      fetchTasksWithCost(),
     ]);
 
-    console.log(projects);
+
+    console.log(projects,"project is this");
+    const completedProjects = projects.data.filter((project) => project.status === "completed");
+    const totalRevenue = completedProjects.reduce((acc, project) => acc + project.budget, 0);
+
     const currentProjects = projects.count;
-    const previousProject = 8;
+    const previousProject =8;
     const changeProjects = calculateChange(currentProjects, previousProject);
 
     const projectList = projects.data.map((pro) => ({
@@ -63,10 +59,9 @@ export const fetchDashboardData = async () => {
     const currentMember = usersRes.data.data.count;
     const changeMember = calculateChange(currentMember, currentMember);
 
-    const totalRevenue = financeRes.tasks.reduce((sum, t) => sum + t.cost, 0);
-    const changeRevenue = calculateChange(totalRevenue, 0);
-    console.log(totalRevenue);
+    
 
+    
     return {
       stats: {
         totalProjects: {
@@ -96,7 +91,7 @@ export const fetchDashboardData = async () => {
         // },
         revenue: {
           value: `$${totalRevenue}`,
-          change: changeRevenue,
+          change: 6,
           iconType: "money",
           color: "bg-yellow-100",
         },
