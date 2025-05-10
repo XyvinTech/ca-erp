@@ -302,26 +302,116 @@ exports.updateTask = async (req, res, next) => {
             }
         }
 
+        // Check for changes
+        const isNewAssignment = req.body.assignedTo && (!task.assignedTo || task.assignedTo.toString() !== req.body.assignedTo.toString());
+        const changedFields = Object.keys(req.body).filter(key => {
+            if (key === 'assignedTo') return false;
+            if (typeof task[key] === 'object' && task[key] && req.body[key]) {
+                return task[key].toString() !== req.body[key].toString();
+            }
+            return task[key] !== req.body[key];
+        });
+        logger.debug(`isNewAssignment: ${isNewAssignment}, changedFields: ${JSON.stringify(changedFields)}, req.body: ${JSON.stringify(req.body)}`);
+
+        // Update task
         task = await Task.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
             runValidators: true,
         }).populate({
             path: 'project',
             select: 'name projectNumber'
-        })
-            .populate({
-                path: 'assignedTo',
-                select: 'name email'
-            });
+        }).populate({
+            path: 'assignedTo',
+            select: 'name email'
+        });
 
         // Log the task update
         logger.info(`Task updated: ${task.title} (${task._id}) by ${req.user.name} (${req.user._id})`);
+
+        // Reusable function to send notifications
+        const sendTaskNotification = async (userId, sender, task, notificationType, title, message) => {
+            try {
+                const notificationData = {
+                    user: userId,
+                    sender: sender.id,
+                    title,
+                    message,
+                    type: notificationType
+                };
+                logger.debug(`Creating notification: ${JSON.stringify(notificationData)}`);
+                const notification = await Notification.create(notificationData);
+                logger.info(`Notification created: ${notification._id} for user ${userId}`);
+
+                try {
+                    websocketService.sendToUser(userId.toString(), {
+                        type: 'notification',
+                        data: {
+                            _id: notification._id,
+                            title: notification.title,
+                            message: notification.message,
+                            type: notification.type,
+                            read: notification.read,
+                            createdAt: notification.createdAt,
+                            sender: {
+                                _id: sender._id,
+                                name: sender.name,
+                                email: sender.email
+                            },
+                            taskId: task._id,
+                            taskNumber: task.taskNumber,
+                            priority: task.priority,
+                            status: task.status,
+                            projectId: task.project?._id
+                        }
+                    });
+                    logger.debug(`WebSocket notification sent to user ${userId}`);
+                } catch (wsError) {
+                    logger.error(`WebSocket error for task ${task._id}: ${wsError.message}`);
+                }
+            } catch (error) {
+                logger.error(`Notification creation failed for task ${task._id}: ${error.message}`);
+            }
+        };
+
+        // Send notifications for changes
+        if (task.assignedTo) {
+            const userId = task.assignedTo._id || task.assignedTo;
+            if (isNewAssignment) {
+                await sendTaskNotification(
+                    userId,
+                    req.user,
+                    task,
+                    'TASK_REASSIGNED',
+                    `Task Reassigned: ${task.title}`,
+                    `You have been assigned to the task "${task.title}"`
+                );
+            } else if (changedFields.length > 0) {
+                const changesSummary = changedFields.map(field => {
+                    const oldValue = task[field] ? task[field].toString() : 'none';
+                    const newValue = req.body[field] ? req.body[field].toString() : 'none';
+                    return `${field}: ${oldValue} → ${newValue}`;
+                }).join(', ');
+                await sendTaskNotification(
+                    userId,
+                    req.user,
+                    task,
+                    'TASK_UPDATED',
+                    `Task Updated: ${task.title}`,
+                    `The task "${task.title}" has been updated. Changes: ${changesSummary}`
+                );
+            } else {
+                logger.debug(`No notification created. No significant changes detected.`);
+            }
+        } else {
+            logger.debug(`No notification created. Task has no assigned user.`);
+        }
 
         res.status(200).json({
             success: true,
             data: task,
         });
     } catch (error) {
+        logger.error(`Task update error: ${error.message}`);
         next(error);
     }
 };
