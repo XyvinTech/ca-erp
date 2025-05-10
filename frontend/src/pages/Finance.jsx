@@ -339,20 +339,17 @@ console.log(projects,'consolved project');
       )}
 
       {/* Tasks List */}
-      {/* <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-lg font-medium text-gray-900">
-            Completed Projects ({filteredProjects.length})
+            Completed Projects ({projects.length}) {/* Show all projects here */}
           </h2>
           <div className="flex items-center">
             <input
               id="select-all"
               name="select-all"
               type="checkbox"
-              checked={
-                selectedProjects.length === filteredProjects.length &&
-                filteredProjects.length > 0
-              }
+              checked={selectedProjects.length === projects.length && projects.length > 0}
               onChange={handleSelectAll}
               className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
@@ -361,166 +358,6 @@ console.log(projects,'consolved project');
             </label>
           </div>
         </div>
-
-        {filteredProjects.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    <span className="sr-only">Select</span>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    project
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Task/Client
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Assigned To
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Hours
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Cost (₹)
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Completion Date
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredProjects.map((pro) => (
-                  <tr
-                    key={pro.id}
-                    className={
-                      selectedProjects.includes(pro.id)
-                        ? "bg-blue-50"
-                        : "hover:bg-gray-50"
-                    }
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selectedProjects.includes(pro.id)}
-                        onChange={() => handleProjectSelection(pro.id)}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            <Link
-                              to={`/projects/${pro.id}`}
-                              className="hover:text-blue-600"
-                            >
-                              {pro.title}
-                            </Link>
-                          </div>
-                          <div className="text-sm text-gray-500 flex mt-1">
-                            <span
-                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                statusColors[pro.status] || "bg-gray-100 text-gray-800"
-                              }`}
-                            >
-                              {pro.status}
-                            </span>
-                            <span
-                              className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                priorityColors[pro.priority] || "bg-gray-100 text-gray-800"
-                              }`}
-                            >
-                              {pro.priority}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {pro.project?.name || "No Project"}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {pro.project?.client?.name || "No Client"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {pro.assignedTo?.name || "Unassigned"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {pro.actualHours || pro.estimatedHours || 0}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {Number(pro.cost || 0).toLocaleString("en-IN")}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {pro.completedAt
-                        ? new Date(pro.completedAt).toLocaleDateString()
-                        : pro.updatedAt
-                        ? new Date(pro.updatedAt).toLocaleDateString()
-                        : ""}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="px-6 py-8 text-center text-gray-500">
-            No completed project available for invoicing.
-          </div>
-        )}
-      </div> 
-      */}
-
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-  <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
-    <h2 className="text-lg font-medium text-gray-900">
-      Completed Projects ({projects.length}) {/* Show all projects here */}
-    </h2>
-    <div className="flex items-center">
-      <input
-        id="select-all"
-        name="select-all"
-        type="checkbox"
-        checked={selectedProjects.length === projects.length && projects.length > 0}
-        onChange={handleSelectAll}
-        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-      />
-      <label htmlFor="select-all" className="ml-2 text-sm text-gray-700">
-        Select All
-      </label>
-    </div>
-  </div>
 
   {/* If there are no completed projects, show a message */}
   {projects.length > 0 ? (
@@ -550,7 +387,7 @@ console.log(projects,'consolved project');
               scope="col"
               className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
             >
-              Assigned To
+              Total Tasks
             </th>
             <th
               scope="col"
@@ -627,7 +464,7 @@ console.log(projects,'consolved project');
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-gray-900">
-                  {pro.assignedTo?.name || "Unassigned"}
+                  {pro.totalTasks ? `${pro.totalTasks} Tasks` : ""}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
