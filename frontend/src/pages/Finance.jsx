@@ -37,7 +37,7 @@ const Finance = () => {
   const [successMessage, setSuccessMessage] = useState("");
 
   const [filters, setFilters] = useState({
-    // task: "",
+    task: "",
     assignedTo: "",
   });
 
@@ -143,6 +143,21 @@ const Finance = () => {
     return true;
   });
 
+console.log(projects,'consolved project');
+
+  // const Tasks = [
+  //   ...new Map(
+  //     projects.map((pro) => [
+  //       pro.task?.id,
+  //       { id: task.project?.id, name: task.project?.name },
+  //     ])
+  //   ).values(),
+  // ].filter((project) => project.id);
+
+
+  console.log(projects,"hiii");
+
+
   const teamMembers = Array.from(
     new Map(
       projects.map(p => [p.assignedTo?._id, {
@@ -156,7 +171,6 @@ const Finance = () => {
   const totalAmount = selectedProjectsData.reduce((sum, p) => sum + Number(p.cost || 0), 0);
   const totalHours = selectedProjectsData.reduce((sum, p) => sum + Number(p.actualHours || p.estimatedHours || 0), 0);
 
-  console.log(selectedProjects);
   
   if (loading && projects.length === 0) {
     return (
@@ -188,21 +202,21 @@ const Finance = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-  <h1 className="text-2xl font-bold text-gray-900 mb-4 sm:mb-0">
-    Finance - Project Invoicing
-  </h1>
-  <button
-    onClick={openInvoiceModal}
-    disabled={selectedProjects.length === 0}
-    className={`px-4 py-2 ${
-      selectedProjects.length === 0
-        ? "bg-gray-400 cursor-not-allowed"
-        : "bg-blue-600 hover:bg-blue-700"
-    } text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-  >
-    Create Invoice ({selectedProjects.length})
-  </button>
-</div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4 sm:mb-0">
+          Finance - Project Invoicing
+        </h1>
+        <button
+          onClick={openInvoiceModal}
+          disabled={selectedProjects.length === 0}
+          className={`px-4 py-2 ${
+            selectedProjects.length === 0
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
+          } text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+        >
+          Create Invoice ({selectedProjects.length})
+        </button>
+      </div>
 
 
       {/* Success message */}
@@ -259,10 +273,10 @@ const Finance = () => {
               onChange={handleFilterChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">All Projects</option>
-              {projects.map((task) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
+              <option value="">All Task</option>
+              {taks.map((task) => (
+                <option key={task.id} value={task.id}>
+                  {task.name}
                 </option>
               ))}
             </select>
@@ -530,7 +544,7 @@ const Finance = () => {
               scope="col"
               className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
             >
-              Task/Client
+              Client
             </th>
             <th
               scope="col"
@@ -584,7 +598,7 @@ const Finance = () => {
                         to={`/projects/${pro.id}`}
                         className="hover:text-blue-600"
                       >
-                        {pro.title}
+                        {pro.name}
                       </Link>
                     </div>
                     <div className="text-sm text-gray-500 flex mt-1">
@@ -607,11 +621,8 @@ const Finance = () => {
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">
-                  {pro.project?.name || "No Project"}
-                </div>
                 <div className="text-sm text-gray-500">
-                  {pro.project?.client?.name || "No Client"}
+                  {pro.client?.name || "No Client"}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
