@@ -535,6 +535,6 @@ router.route('/:id/time')
  *         description: Forbidden
  */
 router.route('/:id/invoice')
-    .put(protect, authorize('admin'), markTaskAsInvoiced);
+    .put(protect,  markTaskAsInvoiced);
 
 module.exports = router; 
