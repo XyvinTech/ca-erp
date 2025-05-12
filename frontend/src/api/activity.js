@@ -6,7 +6,7 @@ import api from "./axios";
  */
 export const fetchRecentActivity = async () => {
     try {
-        const response = await api.get('/api/activities/recent');
+        const response = await api.get('/activities/recent');
         return {
             data: response.data,
             hasMore: true

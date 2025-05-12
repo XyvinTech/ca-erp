@@ -574,7 +574,12 @@ const TaskSummary = ({ tasks }) => {
 };
 
 const RecentActivity = () => {
-  const { data: activityData, isLoading, error } = useQuery(['recentActivity'], fetchRecentActivity);
+  // Updated to object syntax for React Query v5
+  const { data: activityData, isLoading, error } = useQuery({
+    queryKey: ['recentActivity'],
+    queryFn: fetchRecentActivity
+  });
+  
   const [page, setPage] = useState(1);
   const activitiesPerPage = 5;
 
