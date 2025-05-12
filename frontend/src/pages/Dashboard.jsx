@@ -342,6 +342,7 @@ const ActivityItem = ({ activity }) => {
           </div>
         );
       case "project_created":
+      case "project_milestone":
         return (
           <div className="p-2 rounded-full bg-yellow-100 text-yellow-600">
             <svg
@@ -356,6 +357,44 @@ const ActivityItem = ({ activity }) => {
                 strokeLinejoin="round"
                 strokeWidth="2"
                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              ></path>
+            </svg>
+          </div>
+        );
+      case "deadline_updated":
+        return (
+          <div className="p-2 rounded-full bg-orange-100 text-orange-600">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
+            </svg>
+          </div>
+        );
+      case "document_uploaded":
+        return (
+          <div className="p-2 rounded-full bg-indigo-100 text-indigo-600">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
               ></path>
             </svg>
           </div>
@@ -393,9 +432,7 @@ const ActivityItem = ({ activity }) => {
 
     const diffInMinutes = Math.floor(diffInSeconds / 60);
     if (diffInMinutes < 60) {
-      return `${diffInMinutes} ${
-        diffInMinutes === 1 ? "minute" : "minutes"
-      } ago`;
+      return `${diffInMinutes} ${diffInMinutes === 1 ? "minute" : "minutes"} ago`;
     }
 
     const diffInHours = Math.floor(diffInMinutes / 60);
@@ -536,93 +573,88 @@ const TaskSummary = ({ tasks }) => {
   );
 };
 
-const RecentActivity = ({ activities }) => {
+const RecentActivity = () => {
+  const { data: activityData, isLoading, error } = useQuery(['recentActivity'], fetchRecentActivity);
+  const [page, setPage] = useState(1);
+  const activitiesPerPage = 5;
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-start space-x-3">
+                <div className="rounded-full bg-gray-200 h-10 w-10"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2 mt-2"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="text-red-600">Error loading recent activity</div>
+      </div>
+    );
+  }
+
+  const activities = activityData?.activities || [];
+  const totalPages = Math.ceil(activities.length / activitiesPerPage);
+  const paginatedActivities = activities.slice(
+    (page - 1) * activitiesPerPage,
+    page * activitiesPerPage
+  );
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium">Recent Activity</h2>
-        <Link to="#" className="text-sm text-blue-600 hover:text-blue-800">
+        <Link to="/activity" className="text-sm text-blue-600 hover:text-blue-800">
           View all
         </Link>
       </div>
 
       <div className="space-y-4">
-        {activities.map((activity) => (
-          <div key={activity.id} className="flex items-start">
-            <div
-              className={`p-2 rounded-full mr-3 ${
-                activity.type === "task_completed"
-                  ? "bg-blue-100"
-                  : activity.type === "comment_added"
-                  ? "bg-yellow-100"
-                  : activity.type === "client_added"
-                  ? "bg-green-100"
-                  : "bg-purple-100"
-              }`}
-            >
-              {activity.type === "task_completed" && (
-                <svg
-                  className="w-4 h-4 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
-              )}
-              {activity.type === "comment_added" && (
-                <svg
-                  className="w-4 h-4 text-yellow-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                  />
-                </svg>
-              )}
-              {activity.type === "client_added" && (
-                <svg
-                  className="w-4 h-4 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                  />
-                </svg>
-              )}
-            </div>
-            <div>
-              <p className="text-sm">
-                <span className="font-medium">
-                  {activity.user?.name || activity.user}
-                </span>{" "}
-                {activity.content}
-              </p>
-              <p className="text-xs text-gray-500">
-                {new Date(activity.timestamp).toLocaleString()}
-              </p>
-            </div>
-          </div>
+        {paginatedActivities.map((activity) => (
+          <ActivityItem key={activity.id} activity={activity} />
         ))}
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex justify-center space-x-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className={`px-3 py-1 rounded ${page === 1 ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
+          >
+            Previous
+          </button>
+          <span className="px-3 py-1 text-gray-600">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className={`px-3 py-1 rounded ${page === totalPages ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };
+
+
 
 const UpcomingDeadlines = ({ deadlines }) => {
   return (

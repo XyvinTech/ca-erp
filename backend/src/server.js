@@ -27,6 +27,7 @@ const documentRoutes = require('./routes/document.routes');
 const financeRoutes = require('./routes/finance.routes');
 const settingsRoutes = require('./routes/settings.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const activityRoutes = require('./routes/activity.routes');
 
 // Initialize express app
 const app = express();
@@ -83,6 +84,8 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/activities', activityRoutes);
+
 
 // Swagger documentation
 swaggerDocs(app);
@@ -145,4 +148,4 @@ process.on('unhandledRejection', (err) => {
     server.close(() => process.exit(1));
 });
 
-module.exports = { server }; 
+module.exports = { server };
