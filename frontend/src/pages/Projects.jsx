@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { projectsApi } from "../api/projectsApi";
 import CreateProjectModal from "../components/CreateProjectModal";
+import { fetchTasks } from "../api/tasks";
+import { useAuth } from "../context/AuthContext";
 
 const statusColors = {
   completed: "bg-green-100 text-green-800",
@@ -25,6 +27,15 @@ const Projects = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [projectToDelete, setProjectToDelete] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState({});
+  const [paginations, setPaginations] = useState({
+    page: 1,
+    total: 0,
+    limit: 10,
+  });
+    const { user,role } = useAuth();
+  
 
   const location = useLocation();
 
@@ -46,6 +57,49 @@ const Projects = () => {
     }
   };
 
+  const loadTasksAndProjects = async () => {
+  try {
+    setLoading(true);
+    const [tasksData, projectsData] = await Promise.all([
+      fetchTasks({ ...filters, page: currentPage, limit: 10 }),
+      projectsApi.getAllProjects(),
+    ]);
+
+    const taskList = Array.isArray(tasksData.tasks) ? tasksData.tasks : [];
+
+    
+    console.log("Tasks:", taskList);
+
+    // Step 1: Extract unique project IDs from assigned tasks
+    const taskProjectIds = new Set(taskList.map(task => task.project?._id).filter(Boolean));
+
+    // Step 2: Filter projects using those IDs
+    const allProjects = Array.isArray(projectsData.data) ? projectsData.data : [];
+    const filteredProjects = allProjects.filter(project => taskProjectIds.has(project._id));
+
+    // Set filtered projects
+    setProjects(filteredProjects);
+
+    // setTeamMembers(
+    //   taskList.map(task => task.assignedTo).filter(Boolean)
+    // );
+
+    // Set pagination
+    setPaginations({
+      page: currentPage,
+      total: tasksData.total,
+      limit: tasksData.pagination?.next?.limit || 10,
+    });
+
+    setLoading(false);
+  } catch (err) {
+    console.error("Failed to fetch data:", err);
+    setError("Failed to load tasks. Please try again later.");
+    setLoading(false);
+  }
+};
+
+
   // Function to delete a project
   const deleteProject = async () => {
     try {
@@ -64,10 +118,14 @@ const Projects = () => {
     }
   };
 
-  // Fetch projects when the component mounts
-  useEffect(() => {
-    loadProjects();
-  }, []);
+ useEffect(() => {
+  if (user?.role === "staff") {
+    loadTasksAndProjects();
+  }else {
+    loadProjects(); 
+  }
+}, [currentPage, filters]);
+
 
   // Check for success message from redirect (e.g., after project deletion)
   useEffect(() => {
