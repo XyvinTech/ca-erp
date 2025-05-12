@@ -292,12 +292,25 @@ const Documents = () => {
     );
   }
 
-  const handleUploadSuccess = (newDocument) => {
-    setAllDocuments((prev) => [newDocument, ...prev]);
+  // const handleUploadSuccess = (newDocument) => {
+  //   setAllDocuments((prev) => [newDocument, ...prev]);
+  //   setShowUploadModal(false);
+  //   setSuccessMessage("Document uploaded successfully");
+
+  //   // Clear success message after 3 seconds
+  //   setTimeout(() => {
+  //     setSuccessMessage("");
+  //   }, 3000);
+  // };
+
+   const handleUploadSuccess = (newDocument) => {
+    // setAllDocuments((prev) => [newDocument, ...prev]);
     setShowUploadModal(false);
     setSuccessMessage("Document uploaded successfully");
 
     // Clear success message after 3 seconds
+      fetchInitialData();
+
     setTimeout(() => {
       setSuccessMessage("");
     }, 3000);

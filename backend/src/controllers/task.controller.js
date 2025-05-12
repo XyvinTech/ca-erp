@@ -49,6 +49,7 @@ exports.getTasks = async (req, res, next) => {
         if (req.query.dueAfter) {
             filter.dueDate = { ...filter.dueDate, $gte: new Date(req.query.dueAfter) };
         }
+    //    const total = await Task.countDocuments(filter);
 
         // Search
         if (req.query.search) {
