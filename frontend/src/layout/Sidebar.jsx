@@ -64,10 +64,8 @@ const Sidebar = ({ onCloseMobile ,projects = []}) => {
         case "Documents":
           return role === "admin" || role === "manager";
         case "Projects":
-          if (role === "staff" && projects.length === 0) return false;
           return ["admin", "manager", "staff"].includes(role);
           case "Tasks":
-            // if (role === "staff" && projects.length === 0) return false;
             return ["admin", "manager", "staff"].includes(role);
         case "Finance":
           return ["admin", "manager", "finance"].includes(role);

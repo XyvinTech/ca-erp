@@ -31,9 +31,9 @@ exports.getProjects = async (req, res, next) => {
         }
 
         // If user is not admin, only show projects they are assigned to
-        if (req.user.role !== 'admin') {
-            filter.assignedTo = req.user.id;
-        }
+        // if (req.user.role !== 'admin' && req.user.role !== 'finance' && req.user.role !== 'manager' ) {
+        //     filter.assignedTo = req.user.id;
+        // }
 
         // Search
         if (req.query.search) {
@@ -182,10 +182,10 @@ exports.getProject = async (req, res, next) => {
         if (project.deleted) {
             return next(new ErrorResponse(`Project not found with id of ${req.params.id}`, 404));
         }
-        // Check access - only admin and assigned users can view
-        if (req.user.role !== 'admin' && project.assignedTo.toString() !== req.user.id.toString()) {
-            return next(new ErrorResponse(`User not authorized to access this project`, 403));
-        }
+        // // Check access - only admin and assigned users can view
+        // if (req.user.role !== 'admin' && project.assignedTo.toString() !== req.user.id.toString()) {
+        //     return next(new ErrorResponse(`User not authorized to access this project`, 403));
+        // }
 
         const projectObject = project.toObject(); // Convert Mongoose doc to plain object
         // 🧠 Calculate task completion stats

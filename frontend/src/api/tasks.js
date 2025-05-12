@@ -213,26 +213,24 @@ export const fetchCompletedTasksForInvoicing = async () => {
  * @param {Object} invoiceData - Invoice data including invoice number and date
  * @returns {Promise} Promise object containing the updated task
  */
-export const markTaskAsInvoiced = async (id, invoiceData) => {
-    try {
-        // In a real app, we would put to the backend
-        // const response = await api.put(`/api/tasks/${id}/invoice`, invoiceData);
-        // return response.data;
+export const markProjectAsInvoiced = async (id, invoiceData) => {
+  try {
+  
 
-        const task = await fetchTaskById(id);
+    const project = await fetchProjectById(id);
 
-        // Mark the task as invoiced
-        return {
-            ...task,
-            status: 'Invoiced',
-            invoiceStatus: 'Invoiced',
-            invoiceData: {
-                ...invoiceData,
-                createdAt: new Date().toISOString()
-            }
-        };
-    } catch (error) {
-        console.error(`Error marking task ${id} as invoiced:`, error);
-        throw error;
-    }
-}; 
+    // Mark the project as invoiced
+    return {
+      ...project,
+      status: 'Invoiced',
+      invoiceStatus: 'Invoiced',
+      invoiceData: {
+        ...invoiceData,
+        createdAt: new Date().toISOString()
+      }
+    };
+  } catch (error) {
+    console.error(`Error marking project ${id} as invoiced:`, error);
+    throw error;
+  }
+};

@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import {
-  fetchCompletedTasksForInvoicing,
-  markTaskAsInvoiced,
-} from "../api/tasks";
+  fetchCompletedProjectsForInvoicing,
+  markProjectAsInvoiced
+} from "../api/projects";
+import { Link } from "react-router-dom";
+
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -21,68 +22,64 @@ const priorityColors = {
 };
 
 const Finance = () => {
-  const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedTasks, setSelectedTasks] = useState([]);
+  const [selectedProjects, setSelectedProjects] = useState([]);
   const [invoiceData, setInvoiceData] = useState({
     invoiceNumber: "",
     invoiceDate: new Date().toISOString().split("T")[0],
     client: "",
-    selectedTaskIds: [],
+    selectedProjectIds: [],
   });
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
-  // Filter states
   const [filters, setFilters] = useState({
-    project: "",
+    task: "",
     assignedTo: "",
   });
 
-  const loadTasks = async () => {
+  const loadProjects = async () => {
     try {
       setLoading(true);
-      const data = await fetchCompletedTasksForInvoicing();
-      console.log('Tasks received from API:', data.tasks); // Debug log
-      // Transform tasks to include cost from project.budget
-      const transformedTasks = data.tasks.map(task => ({
-        ...task,
-        cost: task.project?.budget || 0 // Populate cost with project.budget
+      const data = await fetchCompletedProjectsForInvoicing();
+      console.log('hsda',data);
+      
+      const transformed = data.projects.map(project => ({
+        ...project,
+        cost: project.budget || 0,
       }));
-      setTasks(transformedTasks);
-      setLoading(false);
+      setProjects(transformed);
     } catch (err) {
-      console.error("Failed to fetch data:", err);
-      setError("Failed to load completed tasks. Please try again later.");
+      console.error("Failed to fetch completed projects:", err);
+      setError("Failed to load completed projects. Please try again later.");
+    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadTasks();
+    loadProjects();
   }, []);
 
-  const handleTaskSelection = (taskId) => {
-    setSelectedTasks((prev) => {
-      if (prev.includes(taskId)) {
-        return prev.filter((id) => id !== taskId);
-      } else {
-        return [...prev, taskId];
-      }
-    });
+  
+  const handleProjectSelection = (id) => {
+    setSelectedProjects(prev =>
+      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+    );
   };
 
   const handleSelectAll = () => {
-    if (selectedTasks.length === filteredTasks.length) {
-      setSelectedTasks([]);
+    if (selectedProjects.length === filteredProjects.length) {
+      setSelectedProjects([]);
     } else {
-      setSelectedTasks(filteredTasks.map((task) => task.id));
+      setSelectedProjects(filteredProjects.map(p => p.id));
     }
   };
 
-  const handleFilterChange = (e) => {
+   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({
       ...prev,
@@ -92,39 +89,23 @@ const Finance = () => {
 
   const resetFilters = () => {
     setFilters({
-      project: "",
+      // task: "",
       assignedTo: "",
     });
   };
 
   const openInvoiceModal = () => {
-    if (selectedTasks.length === 0) {
-      alert("Please select at least one task to create an invoice.");
+    if (!selectedProjects.length) {
+      alert("Please select at least one project to invoice.");
       return;
     }
 
-    const selectedTasksData = tasks.filter((task) =>
-      selectedTasks.includes(task.id)
-    );
-    const projectId = selectedTasksData[0]?.project?.id;
-    const clientName = selectedTasksData[0]?.project?.client?.name || "Unknown Client";
-
-    const allSameProject = selectedTasksData.every(
-      (task) => task.project?.id === projectId
-    );
-
-    if (!allSameProject) {
-      alert(
-        "All selected tasks must be from the same project/client to create a single invoice."
-      );
-      return;
-    }
-
+    const clientName = projects.find(p => selectedProjects.includes(p.id))?.client?.name || "Unknown Client";
     setInvoiceData({
       invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
       invoiceDate: new Date().toISOString().split("T")[0],
       client: clientName,
-      selectedTaskIds: selectedTasks,
+      selectedProjectIds: selectedProjects,
     });
 
     setShowInvoiceModal(true);
@@ -133,78 +114,65 @@ const Finance = () => {
   const handleCreateInvoice = async () => {
     try {
       setLoading(true);
-
-      for (const taskId of selectedTasks) {
-        await markTaskAsInvoiced(taskId, {
+      for (const id of selectedProjects) {
+        await markProjectAsInvoiced(id, {
           invoiceNumber: invoiceData.invoiceNumber,
           invoiceDate: invoiceData.invoiceDate,
         });
       }
 
-      await loadTasks();
-      setSelectedTasks([]);
-      setSuccessMessage(
-        `Invoice ${invoiceData.invoiceNumber} created successfully for ${invoiceData.client}.`
-      );
+      await loadProjects();
+      setSelectedProjects([]);
+      setSuccessMessage(`Invoice ${invoiceData.invoiceNumber} created successfully for ${invoiceData.client}.`);
       setShowSuccessMessage(true);
       setShowInvoiceModal(false);
 
-      setLoading(false);
-
-      setTimeout(() => {
-        setShowSuccessMessage(false);
-      }, 5000);
+      setTimeout(() => setShowSuccessMessage(false), 5000);
     } catch (err) {
-      console.error("Failed to create invoice:", err);
+      console.error("Invoice creation failed:", err);
       setError("Failed to create invoice. Please try again later.");
+    } finally {
       setLoading(false);
     }
   };
 
-  // Apply filters to tasks, ensuring only completed tasks are shown
-  const filteredTasks = tasks.filter((task) => {
-    if (task.status !== 'completed') return false; // Hard filter for completed status
-    if (filters.project && task.project?.id !== filters.project) return false;
-    if (filters.assignedTo && task.assignedTo?._id !== filters.assignedTo) return false;
+  const filteredProjects = projects.filter((p) => {
+    if (p.status !== 'completed') return false;
+    if (filters.project && p.id !== filters.project) return false;
+    if (filters.assignedTo && p.assignedTo?._id !== filters.assignedTo) return false;
     return true;
   });
-  console.log('Filtered tasks (after status filter):', filteredTasks); // Debug log
 
-  // Get unique projects from tasks
-  const projects = [
-    ...new Map(
-      tasks.map((task) => [
-        task.project?.id,
-        { id: task.project?.id, name: task.project?.name },
-      ])
-    ).values(),
-  ].filter((project) => project.id);
+console.log(projects,'consolved project');
 
-  // Get unique team members from tasks
-  const teamMembers = [
-    ...new Map(
-      tasks.map((task) => [
-        task.assignedTo?._id,
-        { id: task.assignedTo?._id, name: task.assignedTo?.name },
-      ])
-    ).values(),
-  ].filter((member) => member.id && member.name);
-  console.log('Team members for filter:', teamMembers); // Debug log
+  // const Tasks = [
+  //   ...new Map(
+  //     projects.map((pro) => [
+  //       pro.task?.id,
+  //       { id: task.project?.id, name: task.project?.name },
+  //     ])
+  //   ).values(),
+  // ].filter((project) => project.id);
 
-  // Calculate totals
-  const selectedTasksData = tasks.filter((task) =>
-    selectedTasks.includes(task.id)
-  );
-  const totalAmount = selectedTasksData.reduce(
-    (sum, task) => sum + (Number(task.cost || 0)),
-    0
-  );
-  const totalHours = selectedTasksData.reduce(
-    (sum, task) => sum + (Number(task.actualHours || task.estimatedHours || 0)),
-    0
-  );
 
-  if (loading && tasks.length === 0) {
+  console.log(projects,"hiii");
+
+
+  const teamMembers = Array.from(
+    new Map(
+      projects.map(p => [p.assignedTo?._id, {
+        id: p.assignedTo?._id,
+        name: p.assignedTo?.name,
+      }])
+    ).values()
+  ).filter(member => member.id && member.name);
+
+  const selectedProjectsData = projects.filter(p => selectedProjects.includes(p.id));
+  const totalAmount = selectedProjectsData.reduce((sum, p) => sum + Number(p.cost || 0), 0);
+  const totalHours = selectedProjectsData.reduce((sum, p) => sum + Number(p.actualHours || p.estimatedHours || 0), 0);
+
+  
+  if (loading && projects.length === 0) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
@@ -212,13 +180,15 @@ const Finance = () => {
     );
   }
 
+  
+
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-red-50 p-4 rounded-md">
           <p className="text-red-700">{error}</p>
           <button
-            onClick={loadTasks}
+            onClick={loadProjects}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             Try Again
@@ -228,24 +198,26 @@ const Finance = () => {
     );
   }
 
+  // Render your main UI here (tables, filters, invoice modal, etc.
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900 mb-4 sm:mb-0">
-          Finance - Task Invoicing
+          Finance - Project Invoicing
         </h1>
         <button
           onClick={openInvoiceModal}
-          disabled={selectedTasks.length === 0}
+          disabled={selectedProjects.length === 0}
           className={`px-4 py-2 ${
-            selectedTasks.length === 0
+            selectedProjects.length === 0
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-blue-600 hover:bg-blue-700"
           } text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
         >
-          Create Invoice ({selectedTasks.length})
+          Create Invoice ({selectedProjects.length})
         </button>
       </div>
+
 
       {/* Success message */}
       {showSuccessMessage && (
@@ -287,28 +259,28 @@ const Finance = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
+          {/* <div>
             <label
               htmlFor="project"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Project
+              Task
             </label>
             <select
               id="project"
               name="project"
-              value={filters.project}
+              value={filters.task}
               onChange={handleFilterChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">All Projects</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
+              <option value="">All Task</option>
+              {taks.map((task) => (
+                <option key={task.id} value={task.id}>
+                  {task.name}
                 </option>
               ))}
             </select>
-          </div>
+          </div> */}
 
           <div>
             <label
@@ -336,13 +308,13 @@ const Finance = () => {
       </div>
 
       {/* Selected Tasks Summary */}
-      {selectedTasks.length > 0 && (
+      {selectedProjects.length > 0 && (
         <div className="bg-blue-50 rounded-lg shadow p-4 mb-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div>
               <p className="text-sm text-blue-800">
-                <span className="font-medium">{selectedTasks.length}</span>{" "}
-                tasks selected
+                <span className="font-medium">{selectedProjects.length}</span>{" "}
+                project selected
               </p>
               <p className="text-sm text-blue-800">
                 Total Amount:{" "}
@@ -370,17 +342,14 @@ const Finance = () => {
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-lg font-medium text-gray-900">
-            Completed Tasks ({filteredTasks.length})
+            Completed Projects ({projects.length}) {/* Show all projects here */}
           </h2>
           <div className="flex items-center">
             <input
               id="select-all"
               name="select-all"
               type="checkbox"
-              checked={
-                selectedTasks.length === filteredTasks.length &&
-                filteredTasks.length > 0
-              }
+              checked={selectedProjects.length === projects.length && projects.length > 0}
               onChange={handleSelectAll}
               className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
@@ -390,144 +359,143 @@ const Finance = () => {
           </div>
         </div>
 
-        {filteredTasks.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    <span className="sr-only">Select</span>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Task
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Project/Client
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Assigned To
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Hours
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Cost (₹)
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Completion Date
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTasks.map((task) => (
-                  <tr
-                    key={task.id}
-                    className={
-                      selectedTasks.includes(task.id)
-                        ? "bg-blue-50"
-                        : "hover:bg-gray-50"
-                    }
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selectedTasks.includes(task.id)}
-                        onChange={() => handleTaskSelection(task.id)}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            <Link
-                              to={`/tasks/${task.id}`}
-                              className="hover:text-blue-600"
-                            >
-                              {task.title}
-                            </Link>
-                          </div>
-                          <div className="text-sm text-gray-500 flex mt-1">
-                            <span
-                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                statusColors[task.status] || "bg-gray-100 text-gray-800"
-                              }`}
-                            >
-                              {task.status}
-                            </span>
-                            <span
-                              className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                priorityColors[task.priority] || "bg-gray-100 text-gray-800"
-                              }`}
-                            >
-                              {task.priority}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {task.project?.name || "No Project"}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {task.project?.client?.name || "No Client"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {task.assignedTo?.name || "Unassigned"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {task.actualHours || task.estimatedHours || 0}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {Number(task.cost || 0).toLocaleString("en-IN")}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {task.completedAt
-                        ? new Date(task.completedAt).toLocaleDateString()
-                        : task.updatedAt
-                        ? new Date(task.updatedAt).toLocaleDateString()
-                        : ""}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="px-6 py-8 text-center text-gray-500">
-            No completed tasks available for invoicing.
-          </div>
-        )}
-      </div>
+  {/* If there are no completed projects, show a message */}
+  {projects.length > 0 ? (
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              <span className="sr-only">Select</span>
+            </th>
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Project
+            </th>
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Client
+            </th>
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Total Tasks
+            </th>
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Hours
+            </th>
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Cost (₹)
+            </th>
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Completion Date
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {projects.map((pro) => (
+            <tr
+              key={pro.id}
+              className={
+                selectedProjects.includes(pro.id)
+                  ? "bg-blue-50"
+                  : "hover:bg-gray-50"
+              }
+            >
+              <td className="px-6 py-4 whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  checked={selectedProjects.includes(pro.id)}
+                  onChange={() => handleProjectSelection(pro.id)}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">
+                      <Link
+                        to={`/projects/${pro.id}`}
+                        className="hover:text-blue-600"
+                      >
+                        {pro.name}
+                      </Link>
+                    </div>
+                    <div className="text-sm text-gray-500 flex mt-1">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          statusColors[pro.status] || "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {pro.status}
+                      </span>
+                      <span
+                        className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          priorityColors[pro.priority] || "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {pro.priority}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-500">
+                  {pro.client?.name || "No Client"}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900">
+                  {pro.totalTasks ? `${pro.totalTasks} Tasks` : ""}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900">
+                  {pro.actualHours || pro.estimatedHours || 0}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900">
+                  {Number(pro.cost || 0).toLocaleString("en-IN")}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {pro.completedAt
+                  ? new Date(pro.completedAt).toLocaleDateString()
+                  : pro.updatedAt
+                  ? new Date(pro.updatedAt).toLocaleDateString()
+                  : ""}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <div className="px-6 py-8 text-center text-gray-500">
+      No completed project available for invoicing.
+    </div>
+  )}
+</div>
+
 
       {/* Create Invoice Modal */}
       {showInvoiceModal && (
@@ -622,9 +590,9 @@ const Finance = () => {
                         </p>
                         <p className="text-sm text-gray-700">
                           <span className="font-medium">
-                            {selectedTasks.length}
+                            {selectedProjects.length}
                           </span>{" "}
-                          tasks
+                          projects
                         </p>
                         <p className="text-sm text-gray-700">
                           Total Amount:{" "}

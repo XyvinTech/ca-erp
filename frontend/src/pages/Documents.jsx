@@ -5,6 +5,7 @@ import { documentsApi } from "../api/documentsApi";
 import { fetchProjects } from "../api/projects";
 import { userApi } from "../api/userApi";
 import ConfirmModal from "../components/settings/DeleteModal";
+import { projectsApi } from "../api";
 
 // File type icons
 const getFileIcon = (type) => {
@@ -134,7 +135,7 @@ const Documents = () => {
       setLoading(true);
       const [documentsRes, projectsRes, usersRes] = await Promise.all([
         documentsApi.getAllDocuments({ ...filters,search: searchTerm, page: currentPage, limit: 10 }),
-        fetchProjects(),
+        projectsApi.getAllProjects(),
         userApi.Allusers()
 
       ]);
