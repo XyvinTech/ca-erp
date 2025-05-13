@@ -430,6 +430,10 @@ exports.getProjectTasks = async (req, res, next) => {
         if (!project) {
             return next(new ErrorResponse(`Project not found with id of ${req.params.id}`, 404));
         }
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const startIndex = (page - 1) * limit;
+        const endIndex = page * limit;
 
         // Check access - only admin and assigned users can view
         // if (req.user.role !== 'admin' && project.assignedTo.toString() !== req.user.id.toString()) {
@@ -461,10 +465,7 @@ exports.getProjectTasks = async (req, res, next) => {
         }
 
         //pagination
-        const page = parseInt(req.query.page, 10) || 1;
-        const limit = parseInt(req.query.limit, 10) || 10;
-        const startIndex = (page - 1) * limit;
-        const endIndex = page * limit;
+       
         const total = await Task.countDocuments(filter);
 
 

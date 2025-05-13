@@ -21,7 +21,7 @@ exports.getTasks = async (req, res, next) => {
         const limit = parseInt(req.query.limit, 10) || 10;
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
-        const total = await Task.countDocuments();
+        // const total = await Task.countDocuments();
 
         // Filtering
         const filter = {};
@@ -49,7 +49,7 @@ exports.getTasks = async (req, res, next) => {
         if (req.query.dueAfter) {
             filter.dueDate = { ...filter.dueDate, $gte: new Date(req.query.dueAfter) };
         }
-    //    const total = await Task.countDocuments(filter);
+       const total = await Task.countDocuments(filter);
 
         // Search
         if (req.query.search) {

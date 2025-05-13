@@ -206,9 +206,6 @@ const handleEditDocumentClick = (doc) => {
   const handleDownloadDocument = async (documentId, filename) => {
     try {
       const blob = await documentsApi.downloadDocument(documentId);
-
-
-
       // Create a blob URL and trigger download
       const url = window.URL.createObjectURL(new Blob([blob]));
       const link = document.createElement("a");
@@ -534,7 +531,7 @@ const handleEditDocumentClick = (doc) => {
                   </h3>
                   <div className="bg-gray-50 rounded-lg p-4">
                     {project.team?.length > 0 ? (
-                      <ul className="space-y-3">
+                      <ul className="grid grid-cols-2 gap-y-4 gap-x-6">
                         {project.team.map((member) => (
                           <li key={member.id} className="flex items-center">
                             <div className="flex-shrink-0">
@@ -611,8 +608,8 @@ const handleEditDocumentClick = (doc) => {
                   <ul className="divide-y divide-gray-200">
                     {project.documents?.filter(doc => !doc.deleted).map((doc) => (
                       <li key={doc._id} className="p-4 hover:bg-gray-100">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
+                        <div className="flex  justify-between">
+                          <div className="flex ">
                             <svg
                               className="h-6 w-6 text-gray-400 mr-3"
                               fill="none"
@@ -637,42 +634,54 @@ const handleEditDocumentClick = (doc) => {
                               </p>
                             </div>
                           </div>
-                          
+                        <div className="flex space-x-2">                        
                           <button
                             onClick={() => handleDownloadDocument(doc._id, doc.name)}
                             className="text-sm text-blue-600 hover:text-blue-800"
-                          >
-                            Download
-                          </button>
-                          <div className="flex space-x-2">
-                <button
-                  onClick={() => handleEditDocumentClick(doc)}
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  <CiEdit size={20} />
-                </button>
-                <button
-                  onClick={() => setDocToDelete(doc)}
-                  className="text-red-600 hover:text-red-800 font-bold "
-                >
-                  <MdDelete size={20} />
-                </button>
-              </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <div className="bg-gray-50 rounded-lg p-8 text-center">
-                  <p className="text-gray-500 mb-4">
-                    No documents uploaded for this project yet.
-                  </p>
-                  <button  onClick={() => setIsAddDocumentModalOpen(true)} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                    Upload Document
-                  </button>
-                </div>
-              )}
+                              >
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                ></path>
+                              </svg>
+                            </button>
+                      <button
+                        onClick={() => handleEditDocumentClick(doc)}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <CiEdit size={20} />
+                      </button>
+                      <button
+                        onClick={() => setDocToDelete(doc)}
+                        className="text-red-600 hover:text-red-800 font-bold "
+                      >
+                        <MdDelete size={20} />
+                      </button>
+                    </div>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 rounded-lg p-8 text-center">
+                        <p className="text-gray-500 mb-4">
+                          No documents uploaded for this project yet.
+                        </p>
+                        <button  onClick={() => setIsAddDocumentModalOpen(true)} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                          Upload Document
+                        </button>
+                      </div>
+                    )}
             </div>
           )}
 

@@ -411,6 +411,7 @@ exports.shareDocument = async (req, res, next) => {
  * @access  Private
  */
 exports.downloadDocument = async (req, res, next) => {
+
     try {
         const document = await Document.findById(req.params.id);
 
@@ -433,6 +434,9 @@ exports.downloadDocument = async (req, res, next) => {
         }
 
         const filePath = path.join(__dirname, '../../public', document.fileUrl);
+console.log('📂 document.fileUrl:', document.fileUrl);
+console.log('📁 Resolved file path:', filePath);
+console.log('📂 File exists:', fs.existsSync(filePath));
 
         if (!fs.existsSync(filePath)) {
             return next(new ErrorResponse(`File not found`, 404));

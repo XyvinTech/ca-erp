@@ -97,7 +97,15 @@ export const fetchTasksByProject = async (projectId) => {
     try {
         // In a real app, we would fetch from the backend
         const response = await api.get(`/projects/${projectId}/tasks`);
-        return response.data;
+          // return response.data;
+          console.log("Full response data:", response.data);
+
+        return {
+           data: response.data.data, 
+            pagination: response.data.pagination,
+            total: response.data.total
+      
+        };
 
         // For demo purposes, filter the mock tasks by project ID
         // const { tasks } = await fetchTasks();

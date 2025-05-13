@@ -81,6 +81,9 @@ const Tasks = () => {
       setLoading(false);
     }
   };
+
+  console.log(paginations,'page');
+  
   
 
   useEffect(() => {
@@ -131,6 +134,10 @@ const Tasks = () => {
   );
   const totalPage = Math.ceil(paginations.total / paginations.limit);
   const pages = Array.from({ length: totalPage }, (_, i) => i + 1);
+
+  console.log('total',totalPage,pages,'page');
+
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
