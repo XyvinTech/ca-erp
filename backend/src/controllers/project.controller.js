@@ -433,7 +433,7 @@ exports.getProjectTasks = async (req, res, next) => {
 
         // Check access - only admin and assigned users can view
         // if (req.user.role !== 'admin' && project.assignedTo.toString() !== req.user.id.toString()) {
-        //     return next(new ErrorResponse(`User not authorized to access this project`, 403));
+        //     return next(new ErrorResponse(User not authorized to access this project, 403));
         // }
 
         const isAdmin = req.user.role === 'admin';
@@ -444,7 +444,7 @@ exports.getProjectTasks = async (req, res, next) => {
             );
 
         if (!isAdmin && !isTeamMember) {
-            return next(new ErrorResponse(`User not authorized to access this project`, 403));
+            return next(new ErrorResponse("User not authorized to access this project", 403));
         }
 
         // Filtering
@@ -460,8 +460,18 @@ exports.getProjectTasks = async (req, res, next) => {
             filter.priority = req.query.priority;
         }
 
+        //pagination
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const startIndex = (page - 1) * limit;
+        const endIndex = page * limit;
+        const total = await Task.countDocuments(filter);
+
+
         const tasks = await Task.find(filter)
             .sort({ dueDate: 1, priority: -1 })
+            .skip(startIndex)
+            .limit(limit)
             .populate({
                 path: 'assignedTo',
                 select: 'name email avatar'
@@ -471,9 +481,28 @@ exports.getProjectTasks = async (req, res, next) => {
                 select: 'name email'
             });
 
+             const pagination = {};
+
+            if (endIndex < total) {
+                pagination.next = {
+                    page: page + 1,
+                    limit,
+                };
+            }
+
+            if (startIndex > 0) {
+                pagination.prev = {
+                    page: page - 1,
+                    limit,
+            };
+        }
+
+
         res.status(200).json({
             success: true,
             count: tasks.length,
+            pagination,
+            total,
             data: tasks,
         });
     } catch (error) {
