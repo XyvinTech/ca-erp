@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { ErrorResponse } = require('../middleware/errorHandler');
 const { logger } = require('../utils/logger');
+const ActivityTracker = require('../utils/activityTracker');
 
 /**
  * @desc    Get all documents
@@ -183,7 +184,6 @@ exports.getDocument = async (req, res, next) => {
  */
 exports.createDocument = async (req, res, next) => {
     try {
-        console.log("fggggggggggggggggggggggggggggggggggggggggg", req.user.id, req.body,req.file.filename)
         // Add user to req.body
         req.body.uploadedBy = req.user.id;
         req.body.fileUrl = `/uploads/documents/${req.file.filename}`;
@@ -213,6 +213,21 @@ exports.createDocument = async (req, res, next) => {
         // Log the document creation
         logger.info(`Document created: ${document.name} (${document._id}) by ${req.user.name} (${req.user._id})`);
 
+         // Track activity
+    try {
+        await ActivityTracker.track({
+          type: 'document_uploaded',
+          title: 'Document Uploaded',
+          description: `Document "${document.name}" was uploaded${req.body.project ? ` to project "${req.body.project}"` : ''}`,
+          entityType: 'document',
+          entityId: document._id,
+          userId: req.user._id,
+          link: `/documents/${document._id}`,
+        });
+        logger.info(`Activity tracked for document creation ${document._id}`);
+      } catch (activityError) {
+        logger.error(`Failed to track activity for document creation ${document._id}: ${activityError.message}`);
+      }
         res.status(201).json({
             success: true,
             data: document,

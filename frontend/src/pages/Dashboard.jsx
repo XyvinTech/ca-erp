@@ -583,8 +583,9 @@ const RecentActivity = () => {
     }
   });
   
-  const [page, setPage] = useState(1);
-  const activitiesPerPage = 5;
+  // Set up pagination with state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4; // Show 4 items per page as requested
 
   if (isLoading) {
     return (
@@ -592,7 +593,7 @@ const RecentActivity = () => {
         <div className="animate-pulse">
           <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
           <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
+            {[...Array(4)].map((_, i) => (
               <div key={i} className="flex items-start space-x-3">
                 <div className="rounded-full bg-gray-200 h-10 w-10"></div>
                 <div className="flex-1">
@@ -615,54 +616,78 @@ const RecentActivity = () => {
     );
   }
 
-  // Extract activities from the new response structure
+  // Extract activities from the response structure
   const activities = data?.data?.activities || [];
-  const totalPages = Math.ceil(activities.length / activitiesPerPage);
-  const paginatedActivities = activities.slice(
-    (page - 1) * activitiesPerPage,
-    page * activitiesPerPage
+  
+  // Calculate total pages
+  const totalPages = Math.ceil(activities.length / itemsPerPage);
+  
+  // Get current page items
+  const currentActivities = activities.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
+  
+  // Handle page navigation
+  const goToNextPage = () => {
+    setCurrentPage(current => Math.min(current + 1, totalPages));
+  };
+  
+  const goToPreviousPage = () => {
+    setCurrentPage(current => Math.max(current - 1, 1));
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium">Recent Activity</h2>
-        <Link to="/activity" className="text-sm text-blue-600 hover:text-blue-800">
+        {/* <Link to="/activity" className="text-sm text-blue-600 hover:text-blue-800">
           View all
-        </Link>
+        </Link> */}
       </div>
 
       {activities.length > 0 ? (
-        <div className="space-y-4">
-          {paginatedActivities.map((activity) => (
-            <ActivityItem key={activity.id} activity={activity} />
-          ))}
-        </div>
+        <>
+          <div className="space-y-4">
+            {currentActivities.map((activity) => (
+              <ActivityItem key={activity.id} activity={activity} />
+            ))}
+          </div>
+          
+          {/* Pagination controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center mt-4 pt-2 border-t">
+              <button 
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1}
+                className={`flex items-center text-sm font-medium p-1 ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800'}`}
+              >
+                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Previous
+              </button>
+              
+              <span className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              
+              <button 
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                className={`flex items-center text-sm font-medium p-1 ${currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800'}`}
+              >
+                Next
+                <svg className="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="text-center py-6 text-gray-500">
           No recent activity to display
-        </div>
-      )}
-
-      {totalPages > 1 && (
-        <div className="mt-4 flex justify-center space-x-2">
-          <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className={`px-3 py-1 rounded ${page === 1 ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
-          >
-            Previous
-          </button>
-          <span className="px-3 py-1 text-gray-600">
-            Page {page} of {totalPages}
-          </span>
-          <button
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className={`px-3 py-1 rounded ${page === totalPages ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
-          >
-            Next
-          </button>
         </div>
       )}
     </div>
@@ -671,53 +696,149 @@ const RecentActivity = () => {
 
 
 
-const UpcomingDeadlines = ({ deadlines }) => {
+const UpcomingDeadlines = ({ projects }) => {
+  // Add state for pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4;
+  
+  // Extract deadline information from projects
+  const extractDeadlines = () => {
+    const today = new Date();
+    
+    // Map project data to deadline format
+    return projects
+      .map(project => {
+        // Parse the due date
+        const dueDate = new Date(project.dueDate);
+        
+        // Calculate days left
+        const diffTime = dueDate - today;
+        const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        return {
+          id: project.id,
+          title: `${project.name} Completion`,
+          date: project.dueDate,
+          daysLeft: daysLeft > 0 ? daysLeft : 0,
+          project: project.name,
+          projectId: project.id,
+          // Include completion status from project
+          completionPercentage: project.completionPercentage || project.progress
+        };
+      })
+      // Sort by days left (most urgent first)
+      .sort((a, b) => a.daysLeft - b.daysLeft)
+      // Take only the upcoming deadlines (within next 30 days)
+      .filter(deadline => deadline.daysLeft <= 30);
+  };
+
+  const allDeadlines = extractDeadlines();
+  
+  // Calculate total pages
+  const totalPages = Math.ceil(allDeadlines.length / itemsPerPage);
+  
+  // Get current page items
+  const currentDeadlines = allDeadlines.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  
+  // Handle page navigation
+  const goToNextPage = () => {
+    setCurrentPage(current => Math.min(current + 1, totalPages));
+  };
+  
+  const goToPreviousPage = () => {
+    setCurrentPage(current => Math.max(current - 1, 1));
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium">Upcoming Deadlines</h2>
         <Link
-          to={ROUTES.TASKS}
+          to={ROUTES.PROJECTS}
           className="text-sm text-blue-600 hover:text-blue-800"
         >
           View all
         </Link>
       </div>
 
-      <div className="space-y-3">
-        {deadlines.map((deadline) => (
-          <div key={deadline.id} className="p-3 border rounded-lg">
-            <div className="flex justify-between">
-              <h3 className="font-medium">{deadline.title}</h3>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full ${
-                  deadline.daysLeft <= 1
-                    ? "bg-red-100 text-red-800"
-                    : deadline.daysLeft <= 3
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-blue-100 text-blue-800"
-                }`}
-              >
-                {deadline.daysLeft === 0
-                  ? "Today"
-                  : deadline.daysLeft === 1
-                  ? "Tomorrow"
-                  : `${deadline.daysLeft} days left`}
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Due on {deadline.date}</p>
-            <div className="flex items-center mt-2">
-              <span className="text-xs text-gray-500 mr-2">Project:</span>
-              <Link
-                to={`${ROUTES.PROJECTS}/${deadline.projectId}`}
-                className="text-xs text-blue-600 hover:text-blue-800"
-              >
-                {deadline.project}
-              </Link>
-            </div>
+      {allDeadlines.length > 0 ? (
+        <>
+          <div className="space-y-3">
+            {currentDeadlines.map((deadline) => (
+              <div key={deadline.id} className="p-3 border rounded-lg">
+                <div className="flex justify-between">
+                  <h3 className="font-medium">{deadline.title}</h3>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${
+                      deadline.daysLeft <= 1
+                        ? "bg-red-100 text-red-800"
+                        : deadline.daysLeft <= 3
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-blue-100 text-blue-800"
+                    }`}
+                  >
+                    {deadline.daysLeft === 0
+                      ? "Today"
+                      : deadline.daysLeft === 1
+                      ? "Tomorrow"
+                      : `${deadline.daysLeft} days left`}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Due on {deadline.date}</p>
+                <div className="flex items-center mt-2">
+                  <span className="text-xs text-gray-500 mr-2">Project:</span>
+                  <Link
+                    to={`${ROUTES.PROJECTS}/${deadline.projectId}`}
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    {deadline.project}
+                  </Link>
+                </div>
+                
+                
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+          
+          {/* Pagination controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center mt-4 pt-2 border-t">
+              <button 
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1}
+                className={`flex items-center text-sm font-medium p-1 ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800'}`}
+              >
+                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Previous
+              </button>
+              
+              <span className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              
+              <button 
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                className={`flex items-center text-sm font-medium p-1 ${currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800'}`}
+              >
+                Next
+                <svg className="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="text-center py-6 text-gray-500">
+          No upcoming deadlines in the next 30 days
+        </div>
+      )}
     </div>
   );
 };
@@ -1098,7 +1219,7 @@ const Dashboard = () => {
       {/* Recent Activity and Upcoming Deadlines */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RecentActivity activities={activities} />
-        <UpcomingDeadlines deadlines={deadlines} />
+        <UpcomingDeadlines projects={projects} />
       </div>
     </div>
   );
