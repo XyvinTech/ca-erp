@@ -9,9 +9,11 @@ const activitySchema = new mongoose.Schema({
       'task_completed',
       'client_added',
       'project_created',
+      'project_updated',
       'project_milestone',
       'deadline_updated',
-      'document_uploaded'
+      'document_uploaded',
+      'task_updated'
     ]
   },
   title: {

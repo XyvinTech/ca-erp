@@ -3,6 +3,7 @@ const Task = require('../models/Task');
 const Client = require('../models/Client');
 const { ErrorResponse } = require('../middleware/errorHandler');
 const { logger } = require('../utils/logger');
+const ActivityTracker = require('../utils/activityTracker');
 
 /**
  * @desc    Get all projects
@@ -265,6 +266,13 @@ exports.createProject = async (req, res, next) => {
 
         // Log the project creation
         logger.info(`Project created: ${project.name} (${project._id}) by ${req.user.name} (${req.user._id})`);
+         // Track activity
+    try {
+        await ActivityTracker.trackProjectCreated(project, req.user._id);
+        logger.info(`Activity tracked for project creation ${project._id}`);
+      } catch (activityError) {
+        logger.error(`Failed to track activity for project creation ${project._id}: ${activityError.message}`);
+      }
 
         res.status(201).json({
             success: true,
@@ -282,48 +290,98 @@ exports.createProject = async (req, res, next) => {
  */
 exports.updateProject = async (req, res, next) => {
     try {
-        let project = await Project.findById(req.params.id);
-
-        if (!project) {
-            return next(new ErrorResponse(`Project not found with id of ${req.params.id}`, 404));
+      logger.info(`Starting project update for ID: ${req.params.id} by user: ${req.user.name} (${req.user._id})`);
+      console.log('Request body:', JSON.stringify(req.body, null, 2));
+  
+      let project = await Project.findById(req.params.id);
+      if (!project) {
+        return next(new ErrorResponse(`Project not found with id of ${req.params.id}`, 404));
+      }
+  
+      // Check access - only admin and assigned users can update
+      if (req.user.role !== 'admin' && project.assignedTo.toString() !== req.user.id.toString()) {
+        return next(new ErrorResponse(`User not authorized to update this project`, 403));
+      }
+  
+      // Check if client exists
+      if (req.body.client) {
+        const client = await Client.findById(req.body.client);
+        console.log('Client found:', client);
+        if (!client) {
+          return next(new ErrorResponse(`Client not found with id of ${req.body.client}`, 404));
         }
-
-        // Check access - only admin and assigned users can update
-        if (req.user.role !== 'admin' && project.assignedTo.toString() !== req.user.id.toString()) {
-            return next(new ErrorResponse(`User not authorized to update this project`, 403));
+      }
+  
+      // Handle notes if provided
+      if (req.body.notes && Array.isArray(req.body.notes)) {
+        req.body.notes = req.body.notes.map(note => ({
+          ...note,
+          author: req.user._id,
+          createdAt: note.createdAt || new Date(),
+        }));
+      }
+  
+      // Check for changed fields
+      const originalProject = project.toObject();
+      const changedFields = Object.keys(req.body).filter(key => {
+        if (key === 'notes') return false; // Skip notes for comparison
+        if (typeof originalProject[key] === 'object' && originalProject[key] && req.body[key]) {
+          return originalProject[key].toString() !== req.body[key].toString();
         }
-
-        // Check if client exists
-        if (req.body.client) {
-            const client = await Client.findById(req.body.client);
-            if (!client) {
-                return next(new ErrorResponse(`Client not found with id of ${req.body.client}`, 404));
-            }
+        return originalProject[key] !== req.body[key];
+      });
+      logger.debug(`Changed fields: ${JSON.stringify(changedFields)}, req.body: ${JSON.stringify(req.body)}`);
+      console.log('changedFields before tracking:', changedFields);
+  
+      // Update project
+      project = await Project.findByIdAndUpdate(req.params.id, req.body, {
+        new: true,
+        runValidators: true,
+      }).populate({
+        path: 'client',
+        select: 'name contactName contactEmail',
+      }).populate({
+        path: 'assignedTo',
+        select: 'name email avatar',
+      });
+  
+      // Log the project update
+      logger.info(`Project updated: ${project.name} (${project._id}) by ${req.user.name} (${req.user._id})`);
+  
+      // Track activity for project update
+      try {
+        if (changedFields.length > 0) {
+          const changesSummary = changedFields.map(field => {
+            const oldValue = originalProject[field] ? originalProject[field].toString() : 'none';
+            const newValue = req.body[field] ? req.body[field].toString() : 'none';
+            return `${field}: ${oldValue} → ${newValue}`;
+          }).join(', ');
+          await ActivityTracker.track({
+            type: 'project_updated',
+            title: 'Project Updated',
+            description: `Project "${project.name}" was updated. Changes: ${changesSummary}`,
+            entityType: 'project',
+            entityId: project._id,
+            userId: req.user._id,
+            link: `/projects/${project._id}`,
+          });
+          logger.info(`Activity tracked for project update ${project._id}`);
+        } else {
+          logger.debug(`No activity tracked for project ${project._id}: No significant changes detected`);
         }
-        if (req.body.notes && Array.isArray(req.body.notes)) {
-            req.body.notes = req.body.notes.map(note => ({
-                ...note,
-                author: req.user._id, // set author field
-                createdAt: note.createdAt || new Date(), // fallback if frontend didn't send createdAt
-            }));
-        }
-
-        project = await Project.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            runValidators: true,
-        });
-
-        // Log the project update
-        logger.info(`Project updated: ${project.name} (${project._id}) by ${req.user.name} (${req.user._id})`);
-
-        res.status(200).json({
-            success: true,
-            data: project,
-        });
+      } catch (activityError) {
+        logger.error(`Failed to track activity for project update ${project._id}: ${activityError.message}`);
+      }
+  
+      res.status(200).json({
+        success: true,
+        data: project,
+      });
     } catch (error) {
-        next(error);
+      logger.error(`Project update error: ${error.message}`);
+      next(error);
     }
-};
+  };
 
 /**
  * @desc    Delete project

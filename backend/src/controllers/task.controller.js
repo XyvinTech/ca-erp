@@ -7,7 +7,7 @@ const { logger } = require('../utils/logger');
 // const WebSocket = require('ws');
 const websocketService = require('../utils/websocket');
 const Notification = require('../models/Notification');
-
+const ActivityTracker = require('../utils/activityTracker');
 /**
  * @desc    Get all tasks
  * @route   GET /api/tasks
@@ -259,6 +259,13 @@ exports.createTask = async (req, res, next) => {
             }
         }
 
+        // Track activity
+    try {
+        await ActivityTracker.trackTaskCreated(task, req.user._id);
+        logger.info(`Activity tracked for task ${task._id}`);
+      } catch (activityError) {
+        logger.error(`Failed to track activity for task ${task._id}: ${activityError.message}`);
+      }
         res.status(201).json({
             success: true,
             data: task,
@@ -329,6 +336,36 @@ exports.updateTask = async (req, res, next) => {
         // Log the task update
         logger.info(`Task updated: ${task.title} (${task._id}) by ${req.user.name} (${req.user._id})`);
 
+         // Track activity for task update
+    try {
+        if (changedFields.length > 0 || isNewAssignment) {
+          const changesSummary = changedFields.map(field => {
+            const oldValue = task[field] ? task[field].toString() : 'none';
+            const newValue = req.body[field] ? req.body[field].toString() : 'none';
+            return `${field}: ${oldValue} → ${newValue}`;
+          }).join(', ');
+          await ActivityTracker.track({
+            type: 'task_updated',
+            title: 'Task Updated',
+            description: isNewAssignment
+              ? `Task "${task.title}" was reassigned to ${task.assignedTo?.name || 'unknown'}`
+              : `Task "${task.title}" was updated. Changes: ${changesSummary || 'No significant changes'}`,
+            entityType: 'task',
+            entityId: task._id,
+            userId: req.user._id,
+            link: `/tasks/${task._id}`,
+          });
+          logger.info(`Activity tracked for task update ${task._id}`);
+        }
+  
+        // Track task completion specifically
+        if (req.body.status === 'completed' && task.status === 'completed') {
+          await ActivityTracker.trackTaskCompleted(task, req.user._id);
+          logger.info(`Activity tracked for task completion ${task._id}`);
+        }
+      } catch (activityError) {
+        logger.error(`Failed to track activity for task update ${task._id}: ${activityError.message}`);
+      }
         // Reusable function to send notifications
         const sendTaskNotification = async (userId, sender, task, notificationType, title, message) => {
             try {

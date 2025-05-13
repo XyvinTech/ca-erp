@@ -575,9 +575,12 @@ const TaskSummary = ({ tasks }) => {
 
 const RecentActivity = () => {
   // Updated to object syntax for React Query v5
-  const { data: activityData, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['recentActivity'],
-    queryFn: fetchRecentActivity
+    queryFn: async () => {
+      const response = await fetchRecentActivity();
+      return response;
+    }
   });
   
   const [page, setPage] = useState(1);
@@ -612,7 +615,8 @@ const RecentActivity = () => {
     );
   }
 
-  const activities = activityData?.activities || [];
+  // Extract activities from the new response structure
+  const activities = data?.data?.activities || [];
   const totalPages = Math.ceil(activities.length / activitiesPerPage);
   const paginatedActivities = activities.slice(
     (page - 1) * activitiesPerPage,
@@ -628,11 +632,17 @@ const RecentActivity = () => {
         </Link>
       </div>
 
-      <div className="space-y-4">
-        {paginatedActivities.map((activity) => (
-          <ActivityItem key={activity.id} activity={activity} />
-        ))}
-      </div>
+      {activities.length > 0 ? (
+        <div className="space-y-4">
+          {paginatedActivities.map((activity) => (
+            <ActivityItem key={activity.id} activity={activity} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-6 text-gray-500">
+          No recent activity to display
+        </div>
+      )}
 
       {totalPages > 1 && (
         <div className="mt-4 flex justify-center space-x-2">
