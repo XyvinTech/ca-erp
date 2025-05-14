@@ -564,7 +564,7 @@ const goToPrevDocPage = () => {
                   </h3>
                   <div className="bg-gray-50 rounded-lg p-4">
                     {project.team?.length > 0 ? (
-                      <ul className="grid grid-cols-2 gap-y-4 gap-x-6">
+                      <ul className={`grid gap-y-4 gap-x-6 ${project.team.length > 5 ? 'grid-cols-2' : 'grid-cols-1' }`}>
                         {project.team.map((member) => (
                           <li key={member.id} className="flex items-center">
                             <div className="flex-shrink-0">
