@@ -123,6 +123,35 @@ const TaskSchema = new mongoose.Schema(
         dueDate: {
             type: Date,
         },
+               attachments: [
+            {
+                name: {
+                    type: String,
+                    required: true,
+                },
+                size: {
+                    type: Number,
+                    required: true,
+                },
+               
+                fileUrl: {
+                    type: String,
+                    required: true,
+                },
+                fileType: {
+                    type: String,
+                },
+                uploadedAt: {
+                    type: Date,
+                    default: Date.now,
+                },
+            },
+        ],
+       tags: {
+    type: [String],
+    default: []
+},
+
         estimatedHours: {
             type: Number,
             default: 0,
@@ -136,54 +165,81 @@ const TaskSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Task',
         },
-        subtasks: [
+         subtasks: [
             {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Task',
-            },
+                id: String,
+                title: String,
+                status: { type: String, enum: ['pending', 'in progress', 'completed'] }
+            }
         ],
-        timeEntries: [
-            {
-                date: {
-                    type: Date,
-                    default: Date.now,
-                },
-                hours: {
-                    type: Number,
-                    required: [true, 'Please specify the hours spent'],
-                },
-                description: {
-                    type: String,
-                },
-                user: {
-                    type: mongoose.Schema.Types.ObjectId,
-                    ref: 'User',
-                    required: [true, 'Please specify the user for this time entry'],
-                },
-            },
-        ],
-        attachments: [
-            {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Document',
-            },
-        ],
+       timeTracking: {
+                  entries: [
+                      {
+                          date: {
+                              type: Date,
+                              default: Date.now,
+                          },
+                          hours: {
+                              type: Number,
+                              required: [true, 'Please specify the hours spent'],
+                          },
+                          description: {
+                              type: String,
+                          },
+                          user: {
+                              type: mongoose.Schema.Types.ObjectId,
+                              ref: 'User',
+                              required: [true, 'Please specify the user for this time entry'],
+                          },
+                      }
+                  ]
+              },
+        // attachments: [
+        //     {
+        //         type: mongoose.Schema.Types.ObjectId,
+        //         ref: 'Document',
+        //     },
+        // ],
+        // comments: [
+        //     {
+        //         text: {
+        //             type: String,
+        //             required: [true, 'Please add a comment text'],
+        //         },
+        //         user: {
+        //             type: mongoose.Schema.Types.ObjectId,
+        //             ref: 'User',
+        //             required: [true, 'Please specify the user for this comment'],
+        //         },
+        //         createdAt: {
+        //             type: Date,
+        //             default: Date.now,
+        //         },
+        //     },
+        // ],
         comments: [
             {
+                id: {
+                    type: String,
+                    required: true,
+                },
                 text: {
                     type: String,
                     required: [true, 'Please add a comment text'],
                 },
                 user: {
-                    type: mongoose.Schema.Types.ObjectId,
-                    ref: 'User',
-                    required: [true, 'Please specify the user for this comment'],
+                    id: {
+                        type: String,
+                        required: true,
+                    },
+                    name: String,
+                    avatar: String,
                 },
-                createdAt: {
+                timestamp: {
                     type: Date,
                     default: Date.now,
                 },
-            },
+            }
         ],
         invoiceDetails: {
             invoiced: {

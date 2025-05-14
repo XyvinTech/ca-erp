@@ -124,23 +124,31 @@ export const fetchTasksByProject = async (projectId) => {
  * @param {Object} taskData - Task data
  * @returns {Promise} Promise object containing the created task
  */
-export const createTask = async (taskData) => {
-    try {
-        // In a real app, we would post to the backend
-        const response = await api.post('/tasks', taskData);
-        return response.data;
+export const createTask = async (taskData, token) => {
+  try {
+    const isFormData = taskData instanceof FormData;
 
-        // For demo purposes, return the task data with an ID
-        // return {
-        //     id: String(Math.floor(Math.random() * 1000) + 10),
-        //     ...taskData,
-        //     createdAt: new Date().toISOString()
-        // };
-    } catch (error) {
-        console.error("Error creating task:", error);
-        throw error;
+    console.log('Creating task with data:', taskData);
+
+    const response = await api.post('/tasks', taskData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(isFormData && { 'Content-Type': 'multipart/form-data' }),
+      },
+    });
+
+    return response;
+  } catch (error) {
+    // Improved error logging with response data (if available)
+    if (error.response) {
+      console.error("Error creating task:", error.response.data);
+    } else {
+      console.error("Error creating task:", error.message);
     }
+    throw error;
+  }
 };
+
 
 /**
  * Update an existing task
@@ -148,22 +156,24 @@ export const createTask = async (taskData) => {
  * @param {Object} taskData - Updated task data
  * @returns {Promise} Promise object containing the updated task
  */
-export const updateTask = async (id, taskData) => {
-    try {
-        // In a real app, we would put to the backend
-        const response = await api.put(`/tasks/${id}`, taskData);
-        return response.data;
+export const updateTask = async (id, taskData, token) => {
+  try {
+    const isFormData = taskData instanceof FormData;
 
-        // For demo purposes, return the updated task data
-        // return {
-        //     id,
-        //     ...taskData,
-        //     updatedAt: new Date().toISOString()
-        // };
-    } catch (error) {
-        console.error(`Error updating task ${id}:`, error);
-        throw error;
-    }
+    const response = await api.put(`/tasks/${id}`, taskData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(isFormData ? { 'Content-Type': 'multipart/form-data' } : {
+          'Content-Type': 'application/json'
+        }),
+      },
+    });
+
+    return response.data; // safer than returning raw response
+  } catch (error) {
+    console.error(`Error updating task ${id}:`, error.response || error);
+    throw error;
+  }
 };
 
 /**
@@ -239,6 +249,44 @@ export const markProjectAsInvoiced = async (id, invoiceData) => {
     };
   } catch (error) {
     console.error(`Error marking project ${id} as invoiced:`, error);
+    throw error;
+  }
+};
+// export const markTaskAsInvoiced = async (id, invoiceData) => {
+//     try {
+//         // In a real app, we would put to the backend
+//         // const response = await api.put(`/api/tasks/${id}/invoice`, invoiceData);
+//         // return response.data;
+
+//         const task = await fetchTaskById(id);
+
+//         // Mark the task as invoiced
+//         return {
+//             ...task,
+//             status: 'Invoiced',
+//             invoiceStatus: 'Invoiced',
+//             invoiceData: {
+//                 ...invoiceData,
+//                 createdAt: new Date().toISOString()
+//             }
+//         };
+//     } catch (error) {
+//         console.error(`Error marking task ${id} as invoiced:`, error);
+//         throw error;
+//     }
+// };
+export const updateTaskTime = async (id, timeData, token) => {
+  try {
+    const response = await api.put(`/tasks/${id}/time`, timeData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return response.data; // Assuming the updated task or time entry is returned
+  } catch (error) {
+    console.error(`Error updating time for task ${id}:`, error.response || error);
     throw error;
   }
 };

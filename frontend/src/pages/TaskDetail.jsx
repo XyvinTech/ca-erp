@@ -1,20 +1,20 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { fetchTaskById, updateTask, deleteTask } from "../api/tasks";
+import { fetchTaskById, updateTask, deleteTask, updateTaskTime } from "../api/tasks";
 import TaskForm from "../components/TaskForm";
 
 const statusColors = {
-  Pending: "bg-yellow-100 text-yellow-800",
-  "In Progress": "bg-blue-100 text-blue-800",
-  Review: "bg-purple-100 text-purple-800",
-  Completed: "bg-green-100 text-green-800",
-  Cancelled: "bg-gray-100 text-gray-800",
+  pending: "bg-yellow-100 text-yellow-800",
+  "in-Progress": "bg-blue-100 text-blue-800",
+  review: "bg-purple-100 text-purple-800",
+  completed: "bg-green-100 text-green-800",
+  cancelled: "bg-gray-100 text-gray-800",
 };
 
 const priorityColors = {
-  High: "bg-red-100 text-red-800",
-  Medium: "bg-orange-100 text-orange-800",
-  Low: "bg-green-100 text-green-800",
+  high: "bg-red-100 text-red-800",
+  medium: "bg-orange-100 text-orange-800",
+  low: "bg-green-100 text-green-800",
 };
 
 const TaskDetail = () => {
@@ -27,6 +27,11 @@ const TaskDetail = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [showAddSubtaskModal, setShowAddSubtaskModal] = useState(false);
+  const [refresh, setRefresh] = useState(false);
+
+  const token = localStorage.getItem("auth_token");
+  const user = JSON.parse(localStorage.getItem("userData")); // Adjust key if stored under a different name
+
   const [newSubtask, setNewSubtask] = useState({
     title: "",
     status: "pending",
@@ -65,7 +70,7 @@ const TaskDetail = () => {
     };
 
     loadTask();
-  }, [id]);
+  }, [id, refresh]);
 
   const handleStatusChange = async (newStatus) => {
     try {
@@ -106,75 +111,70 @@ const TaskDetail = () => {
         ...(task.comments || []),
         {
           id: Date.now().toString(),
-          text: newComment,
-          user: { id: "1", name: "You", avatar: null }, // In a real app, this would be the current user
+          text: newComment.trim(),
+          user: {
+            id: user._id,
+            name: user.name,
+            avatar: user.avatar || null,
+          },
           timestamp: new Date().toISOString(),
         },
       ];
 
-      const updatedTask = await updateTask(id, {
+      const updatedTask = {
         ...task,
         comments: updatedComments,
-      });
+        project: task.project?._id || "",       // Ensures backend gets raw ID
+        assignedTo: task.assignedTo?._id || "", // Same as above
+      };
 
-      setTask(updatedTask);
+      const updatedTaskResponse = await updateTask(id, updatedTask, token);
+
+      setTask(updatedTaskResponse);
       setNewComment("");
+      setRefresh(prev => !prev);
     } catch (err) {
-      console.error("Failed to add comment:", err);
-      // Show error message
+      console.error("Failed to add comment:", err.response?.data || err.message);
+      setError("Failed to add comment. Please try again later.");
     }
   };
 
-  const handleToggleSubtaskStatus = async (subtaskId) => {
-    try {
-      const updatedSubtasks = task.subtasks.map((subtask) => {
-        if (subtask.id === subtaskId) {
-          return {
-            ...subtask,
-            status: subtask.status === "completed" ? "pending" : "completed",
-          };
-        }
-        return subtask;
-      });
+ 
 
-      const updatedTask = await updateTask(id, {
-        ...task,
-        subtasks: updatedSubtasks,
-      });
+const handleAddSubtask = async () => {
+  if (!newSubtask.title.trim()) return;
 
-      setTask(updatedTask);
-    } catch (err) {
-      console.error("Failed to update subtask status:", err);
-      // Show error message
-    }
-  };
+  try {
+    const updatedSubtasks = [
+      ...(task.subtasks || []),
+      {
+        id: Date.now().toString(),
+        title: newSubtask.title,
+        status: "pending",
+      },
+    ];
 
-  const handleAddSubtask = async () => {
-    if (!newSubtask.title.trim()) return;
+    const updatedTask = {
+      ...task,
+      subtasks: updatedSubtasks,
+      project: task.project ? task.project._id : '', // Ensure this is a string
+      assignedTo: task.assignedTo ? task.assignedTo._id : '', // Ensure this is a string
+    };
 
-    try {
-      const updatedSubtasks = [
-        ...(task.subtasks || []),
-        {
-          id: Date.now().toString(),
-          title: newSubtask.title,
-          status: "pending",
-        },
-      ];
+    console.log("Updated Task:", updatedTask);
 
-      const updatedTask = await updateTask(id, {
-        ...task,
-        subtasks: updatedSubtasks,
-      });
+    const updatedTaskResponse = await updateTask(id, updatedTask,token);
 
-      setTask(updatedTask);
-      setNewSubtask({ title: "", status: "pending" });
-      setShowAddSubtaskModal(false);
-    } catch (err) {
-      console.error("Failed to add subtask:", err);
-      // Show error message
-    }
-  };
+    setTask(updatedTaskResponse);
+    setNewSubtask({ title: "", status: "pending" });
+    setShowAddSubtaskModal(false);
+    setRefresh(prev => !prev);
+  } catch (err) {
+    console.error("Failed to add subtask:", err.response ? err.response.data : err.message);
+  }
+};
+
+
 
   const handleAddAttachment = async () => {
     if (!newAttachment.name.trim()) return;
@@ -204,7 +204,7 @@ const TaskDetail = () => {
       setShowAddAttachmentModal(false);
     } catch (err) {
       console.error("Failed to add attachment:", err);
-      // Show error message
+   
     }
   };
 
@@ -218,27 +218,21 @@ const TaskDetail = () => {
         return;
       }
 
-      const updatedTimeTracking = [
-        ...(task.timeTracking || []),
-        {
-          id: Date.now().toString(),
-          hours: hours,
-          description: newTimeEntry.description,
-          date: newTimeEntry.date,
-        },
-      ];
-
-      // Calculate new actual hours
-      const totalHours = updatedTimeTracking.reduce(
-        (sum, entry) => sum + parseFloat(entry.hours),
-        0
-      );
-
-      const updatedTask = await updateTask(id, {
-        ...task,
-        timeTracking: updatedTimeTracking,
-        actualHours: totalHours,
+      const result = await updateTaskTime(id, {
+        hours,
+        description: newTimeEntry.description,
+        date: newTimeEntry.date,
       });
+
+      // Append the returned entry and update task state
+      const updatedTask = {
+        ...task,
+        timeTracking: {
+          ...task.timeTracking,
+          entries: [...task.timeTracking.entries, result.entry],
+          actualHours: result.totalActualHours,
+        },
+      };
 
       setTask(updatedTask);
       setNewTimeEntry({
@@ -252,6 +246,8 @@ const TaskDetail = () => {
       // Show error message
     }
   };
+  
+  
 
   const handleNotifyFinance = async () => {
     try {
@@ -272,6 +268,34 @@ const TaskDetail = () => {
       console.error("Failed to notify finance team:", err);
       setError("Failed to notify finance team. Please try again later.");
       setNotifyingFinance(false);
+    }
+  };
+
+   const handleToggleSubtaskStatus = async (subtaskId) => {
+    try {
+      const updatedSubtasks = task.subtasks.map((subtask) => {
+        if (subtask.id === subtaskId) {
+          return {
+
+            ...subtask,
+            status: subtask.status === "completed" ? "pending" : "completed",
+          };
+        }
+        return subtask;
+      
+      });
+
+      const updatedTask = await updateTask(id, {
+        ...task,
+        subtasks: updatedSubtasks,
+
+      });
+        setRefresh(prev => !prev);
+
+      setTask(updatedTask);
+    } catch (err) {
+      console.error("Failed to update subtask status:", err);
+      // Show error message
     }
   };
 
@@ -564,7 +588,8 @@ const TaskDetail = () => {
                             {comment.user.avatar ? (
                               <img
                                 className="h-10 w-10 rounded-full"
-                                src={comment.user.avatar}
+                                src={`${import.meta.env.VITE_BASE_URL}${comment.user.avatar}`}
+                               
                                 alt=""
                               />
                             ) : (
@@ -715,9 +740,9 @@ const TaskDetail = () => {
                   ></div>
                 </div>
               </div>
-              {task.timeTracking && task.timeTracking.length > 0 ? (
+              {task.timeTracking && task.timeTracking.entries.length > 0 ? (
                 <ul className="divide-y divide-gray-200">
-                  {task.timeTracking.map((entry, index) => (
+                  {task.timeTracking.entries.map((entry, index) => (
                     <li key={index} className="py-3 flex justify-between">
                       <div>
                         <p className="text-sm font-medium text-gray-900">
@@ -937,74 +962,77 @@ const TaskDetail = () => {
       </div>
 
       {/* Add Subtask Modal */}
-      {showAddSubtaskModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Add Subtask</h3>
-              <button
-                className="text-gray-400 hover:text-gray-500"
-                onClick={() => setShowAddSubtaskModal(false)}
+      <div>
+    {/* Triggering button to show modal */}
+    {/* <button onClick={() => setShowAddSubtaskModal(true)}>Add Subtask</button> */}
+
+    {/* Conditional rendering of modal */}
+    {showAddSubtaskModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-medium text-gray-900">Add Subtask</h3>
+            <button
+              className="text-gray-400 hover:text-gray-500"
+              onClick={() => setShowAddSubtaskModal(false)}
+            >
+              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                ></path>
+              </svg>
+            </button>
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleAddSubtask();
+            }}
+          >
+            <div className="mb-4">
+              <label
+                htmlFor="subtaskTitle"
+                className="block text-sm font-medium text-gray-700 mb-1"
               >
-                <svg
-                  className="h-5 w-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  ></path>
-                </svg>
+                Subtask Title
+              </label>
+              <input
+                type="text"
+                id="subtaskTitle"
+                value={newSubtask.title}
+                onChange={(e) =>
+                  setNewSubtask({ ...newSubtask, title: e.target.value })
+                }
+                placeholder="Enter subtask title"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setShowAddSubtaskModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                disabled={!newSubtask.title.trim()}
+              >
+                Add Subtask
               </button>
             </div>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleAddSubtask();
-              }}
-            >
-              <div className="mb-4">
-                <label
-                  htmlFor="subtaskTitle"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Subtask Title
-                </label>
-                <input
-                  type="text"
-                  id="subtaskTitle"
-                  value={newSubtask.title}
-                  onChange={(e) =>
-                    setNewSubtask({ ...newSubtask, title: e.target.value })
-                  }
-                  placeholder="Enter subtask title"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAddSubtaskModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  disabled={!newSubtask.title.trim()}
-                >
-                  Add Subtask
-                </button>
-              </div>
-            </form>
-          </div>
+          </form>
         </div>
-      )}
+      </div>
+    )}
+  </div>
+
 
       {/* Delete confirmation modal */}
       {confirmDelete && (
