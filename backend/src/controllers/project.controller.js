@@ -209,7 +209,7 @@ exports.getProject = async (req, res, next) => {
         projectObject.completedTasks = completedTasks;
         projectObject.completionPercentage = completionPercentage;
         // Remove budget if user is not admin or finance
-        if (!['admin', 'finance'].includes(req.user.role)) {
+        if (!['admin','manager', 'finance'].includes(req.user.role)) {
             delete projectObject.budget;
         }
 
