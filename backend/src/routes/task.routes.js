@@ -16,6 +16,7 @@ const {
 const { protect, authorize } = require('../middleware/auth');
 const { validate } = require('../middleware/validator');
 const { taskValidation } = require('../middleware/validator');
+const { uploadTaskFile } = require('../middleware/upload');
 
 /**
  * @swagger
@@ -183,7 +184,8 @@ router.route('/')
      *       401:
      *         description: Unauthorized
      */
-    .post(protect, validate(taskValidation.create), createTask);
+    .post(protect, uploadTaskFile.single('file'), validate(taskValidation.create), createTask);
+   
 
 /**
  * @swagger
@@ -265,7 +267,8 @@ router.route('/:id')
      *       403:
      *         description: Not authorized to update this task
      */
-    .put(protect, validate(taskValidation.update), updateTask)
+        .put(protect, uploadTaskFile.single('file'), updateTask)
+
     /**
      * @swagger
      * /api/tasks/{id}:

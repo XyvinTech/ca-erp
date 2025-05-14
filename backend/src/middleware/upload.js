@@ -49,6 +49,19 @@ const storage = {
             cb(null, `company-logo${ext}`);
         },
     }),
+
+       // Add storage for task files
+        taskFiles: multer.diskStorage({
+            destination: (req, file, cb) => {
+                const uploadPath = createUploadDir('/taskFiles');
+                cb(null, uploadPath);
+            },
+            filename: (req, file, cb) => {
+                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+                const ext = path.extname(file.originalname);
+                cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+            },
+        }),
 };
 
 // File filter to check file types
@@ -70,6 +83,7 @@ const fileFilter = (req, file, cb) => {
         ],
         avatars: ['image/jpeg', 'image/png', 'image/gif'],
         logos: ['image/jpeg', 'image/png', 'image/svg+xml'],
+        taskFiles: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'image/jpeg', 'image/png', 'application/zip', 'application/x-zip-compressed'],
     };
 
     // Determine upload type based on route or request data
@@ -112,4 +126,5 @@ module.exports = {
     uploadDocument: upload('documents'),
     uploadAvatar: upload('avatars'),
     uploadLogo: upload('logos'),
+     uploadTaskFile: upload('taskFiles'), 
 }; 
