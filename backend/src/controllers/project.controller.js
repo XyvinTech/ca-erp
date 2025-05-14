@@ -430,10 +430,10 @@ exports.getProjectTasks = async (req, res, next) => {
         if (!project) {
             return next(new ErrorResponse(`Project not found with id of ${req.params.id}`, 404));
         }
-        const page = parseInt(req.query.page, 10) || 1;
-        const limit = parseInt(req.query.limit, 10) || 10;
-        const startIndex = (page - 1) * limit;
-        const endIndex = page * limit;
+        // const page = parseInt(req.query.page, 10) || 1;
+        // const limit = parseInt(req.query.limit, 10) || 10;
+        // const startIndex = (page - 1) * limit;
+        // const endIndex = page * limit;
 
         // Check access - only admin and assigned users can view
         // if (req.user.role !== 'admin' && project.assignedTo.toString() !== req.user.id.toString()) {
@@ -466,13 +466,13 @@ exports.getProjectTasks = async (req, res, next) => {
 
         //pagination
        
-        const total = await Task.countDocuments(filter);
+        // const total = await Task.countDocuments(filter);
 
 
         const tasks = await Task.find(filter)
             .sort({ dueDate: 1, priority: -1 })
-            .skip(startIndex)
-            .limit(limit)
+            // .skip(startIndex)
+            // .limit(limit)
             .populate({
                 path: 'assignedTo',
                 select: 'name email avatar'
@@ -482,28 +482,28 @@ exports.getProjectTasks = async (req, res, next) => {
                 select: 'name email'
             });
 
-             const pagination = {};
+        //      const pagination = {};
 
-            if (endIndex < total) {
-                pagination.next = {
-                    page: page + 1,
-                    limit,
-                };
-            }
+        //     if (endIndex < total) {
+        //         pagination.next = {
+        //             page: page + 1,
+        //             limit,
+        //         };
+        //     }
 
-            if (startIndex > 0) {
-                pagination.prev = {
-                    page: page - 1,
-                    limit,
-            };
-        }
+        //     if (startIndex > 0) {
+        //         pagination.prev = {
+        //             page: page - 1,
+        //             limit,
+        //     };
+        // }
 
 
         res.status(200).json({
             success: true,
             count: tasks.length,
-            pagination,
-            total,
+            // pagination,
+            // total,
             data: tasks,
         });
     } catch (error) {
