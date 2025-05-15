@@ -140,11 +140,7 @@ const TaskSchema = new mongoose.Schema(
                 },
                 fileType: {
                     type: String,
-                       },
-                       description: {
-                           type: String,
-                           maxlength: [500, 'Description cannot be more than 500 characters'],
-                    },
+                },
                 uploadedAt: {
                     type: Date,
                     default: Date.now,
@@ -157,10 +153,6 @@ const TaskSchema = new mongoose.Schema(
 },
 
         estimatedHours: {
-            type: Number,
-            default: 0,
-        },
-        actualHours: {
             type: Number,
             default: 0,
         },
@@ -276,13 +268,13 @@ const TaskSchema = new mongoose.Schema(
 );
 
 // Calculate total hours spent on a task
-// TaskSchema.virtual('actualHours').get(function () {
-//     if (!this.timeEntries || this.timeEntries.length === 0) {
-//         return 0;
-//     }
+TaskSchema.virtual('actualHours').get(function () {
+    if (!this.timeEntries || this.timeEntries.length === 0) {
+        return 0;
+    }
 
-//     return this.timeEntries.reduce((total, entry) => total + entry.hours, 0);
-// });
+    return this.timeEntries.reduce((total, entry) => total + entry.hours, 0);
+});
 
 // Add task reference to project when a task is created
 TaskSchema.post('save', async function () {

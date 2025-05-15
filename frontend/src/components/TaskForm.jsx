@@ -31,10 +31,7 @@ const TaskForm = ({ projectIds, onSuccess, onCancel, task = null }) => {
   const [status, setStatus] = useState(task?.status || "pending");
   const [priority, setPriority] = useState(task?.priority?.charAt(0).toUpperCase() + task?.priority?.slice(1) || "Medium");
   const [assignedTo, setAssignedTo] = useState(task?.assignedTo?._id || "");
-  const [dueDate, setDueDate] = useState(
-    task?.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : ""
-  );
-  
+  const [dueDate, setDueDate] = useState(task?.dueDate ? task.dueDate.split("T")[0] : "");
   const [description, setDescription] = useState(task?.description || "");
   const [file, setFile] = useState(null);
  const [selectedTags, setSelectedTags] = useState(task?.tags?.map(tag => ({ id: tag, text: tag })) || []);
@@ -278,12 +275,11 @@ tags: tagList
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">Due Date</label>
           <input
-  type="datetime-local"
-  value={dueDate}
-  onChange={(e) => setDueDate(e.target.value)}
-  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-/>
-
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
         </div>
 
         {/* Description */}

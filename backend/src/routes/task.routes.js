@@ -10,8 +10,7 @@ const {
     addTaskComment,
     updateTaskTime,
     getMyTasks,
-    markTaskAsInvoiced,
-    downloadDocument
+    markTaskAsInvoiced
 } = require('../controllers/task.controller');
 
 const { protect, authorize } = require('../middleware/auth');
@@ -545,6 +544,5 @@ router.route('/:id/time')
  */
 router.route('/:id/invoice')
     .put(protect,  markTaskAsInvoiced);
-router.route('/download/:taskId/:documentId')
-    .get(protect, downloadDocument);
+
 module.exports = router; 

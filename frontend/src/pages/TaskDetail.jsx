@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { fetchTaskById, updateTask, deleteTask, updateTaskTime, downloadDocument } from "../api/tasks";
+import { fetchTaskById, updateTask, deleteTask, updateTaskTime } from "../api/tasks";
 import TaskForm from "../components/TaskForm";
 
 const statusColors = {
@@ -177,50 +177,37 @@ const handleAddSubtask = async () => {
 
 
   const handleAddAttachment = async () => {
-    if (!newAttachment.name.trim() || !newAttachment.file) return;
+    if (!newAttachment.name.trim()) return;
 
     try {
-      const formData = new FormData();
-      const originalFileName = newAttachment.name;
-      const fileNameWithoutExtension = originalFileName.replace(/\.[^/.]+$/, "");
-      formData.append("name", newAttachment.name);
-      formData.append("description", newAttachment.description);
-      formData.append("file", newAttachment.file);
-      formData.append("taskId", id); // If needed by your backend
+      // In a real app, you would upload the file to a server
+      // Here we just simulate it with a local object
 
-      const response = await updateTask(id, formData, token);
+      const updatedAttachments = [
+        ...(task.attachments || []),
+        {
+          id: Date.now().toString(),
+          name: newAttachment.name,
+          size: "1.2 MB", // In a real app, this would be the actual file size
+          uploadedAt: new Date().toISOString(),
+          uploadedBy: 1, // Current user ID
+        },
+      ];
 
-      
+      const updatedTask = await updateTask(id, {
+        ...task,
+        attachments: updatedAttachments,
+      });
 
-    
-      setTask(response);
+      setTask(updatedTask);
       setNewAttachment({ name: "", file: null, description: "" });
       setShowAddAttachmentModal(false);
-      setRefresh(prev => !prev);
     } catch (err) {
       console.error("Failed to add attachment:", err);
-      setError("Failed to add attachment. Please try again later.");
+   
     }
   };
 
-  const handleDownloadDocument = async (documentId, filename) => {
-    try {
-      const blob = await downloadDocument(id,documentId);
-
-      // Create a blob URL and trigger download
-      const url = window.URL.createObjectURL(new Blob([blob]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", filename || "document"); // fallback if no name
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url); // Clean up
-    } catch (error) {
-      console.error("Failed to download document:", error);
-      alert("Error downloading document. Please try again.");
-    }
-  };
   const handleAddTimeEntry = async () => {
     if (!newTimeEntry.hours || !newTimeEntry.description) return;
 
@@ -238,23 +225,22 @@ const handleAddSubtask = async () => {
       });
 
       // Append the returned entry and update task state
-      // const updatedTask = {
-      //   ...task,
-      //   timeTracking: {
-      //     ...task.timeTracking,
-      //     entries: [...task.timeTracking.entries, result.entry],
-      //     actualHours: result.totalActualHours,
-      //   },
-      // };
+      const updatedTask = {
+        ...task,
+        timeTracking: {
+          ...task.timeTracking,
+          entries: [...task.timeTracking.entries, result.entry],
+          actualHours: result.totalActualHours,
+        },
+      };
 
-      // setTask(updatedTask);
+      setTask(updatedTask);
       setNewTimeEntry({
         hours: "",
         description: "",
         date: new Date().toISOString().split("T")[0],
       });
       setShowAddTimeEntryModal(false);
-      setRefresh(prev => !prev);
     } catch (err) {
       console.error("Failed to add time entry:", err);
       // Show error message
@@ -695,27 +681,9 @@ const handleAddSubtask = async () => {
                           </p>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDownloadDocument(attachment.id, attachment.name)}
-                        className="text-blue-600 hover:text-blue-800"
-                        title="Download"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                          ></path>
-                        </svg>
+                      <button className="text-sm text-blue-600 hover:text-blue-800">
+                        Download
                       </button>
-
                     </li>
                   ))}
                 </ul>
@@ -1100,7 +1068,9 @@ const handleAddSubtask = async () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Add Attachment</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                Add Attachment
+              </h3>
               <button
                 className="text-gray-400 hover:text-gray-500"
                 onClick={() => setShowAddAttachmentModal(false)}
@@ -1118,19 +1088,17 @@ const handleAddSubtask = async () => {
                 </svg>
               </button>
             </div>
-
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleAddAttachment();
               }}
             >
-              {/* File Upload */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   File
                 </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center relative">
+                <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
                   <div className="flex justify-center">
                     <svg
                       className="h-12 w-12 text-gray-400"
@@ -1150,12 +1118,12 @@ const handleAddSubtask = async () => {
                     <label className="text-sm text-gray-600">
                       <span className="text-blue-600 hover:text-blue-500 cursor-pointer">
                         Click to upload
-                      </span>{" "}
-                      or drag and drop
+                      </span>
+                      {" or drag and drop"}
                     </label>
                     <input
                       type="file"
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      className="hidden"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
                           const file = e.target.files[0];
@@ -1168,7 +1136,9 @@ const handleAddSubtask = async () => {
                       }}
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Any file up to 10MB</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Any file up to 10MB
+                  </p>
                   {newAttachment.name && (
                     <p className="text-sm text-blue-600 mt-2">
                       Selected: {newAttachment.name}
@@ -1177,7 +1147,6 @@ const handleAddSubtask = async () => {
                 </div>
               </div>
 
-              {/* File Name */}
               <div className="mb-4">
                 <label
                   htmlFor="attachmentName"
@@ -1198,7 +1167,6 @@ const handleAddSubtask = async () => {
                 />
               </div>
 
-              {/* Description */}
               <div className="mb-4">
                 <label
                   htmlFor="attachmentDescription"
@@ -1221,7 +1189,6 @@ const handleAddSubtask = async () => {
                 ></textarea>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
@@ -1233,7 +1200,7 @@ const handleAddSubtask = async () => {
                 <button
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  disabled={!newAttachment.name || !newAttachment.file}
+                  disabled={!newAttachment.name.trim()}
                 >
                   Upload
                 </button>
@@ -1241,7 +1208,6 @@ const handleAddSubtask = async () => {
             </form>
           </div>
         </div>
-   
       )}
 
       {/* Add Time Entry Modal */}
