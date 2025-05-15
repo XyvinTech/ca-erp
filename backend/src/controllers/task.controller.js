@@ -5,6 +5,8 @@ const { ErrorResponse } = require('../middleware/errorHandler');
 const { logger } = require('../utils/logger');
 // const { wsInstance } = require('../server');
 // const WebSocket = require('ws');
+const path = require('path');
+const fs = require('fs');
 const websocketService = require('../utils/websocket');
 const Notification = require('../models/Notification');
 const ActivityTracker = require('../utils/activityTracker');
@@ -175,7 +177,7 @@ exports.createTask = async (req, res, next) => {
         req.body.createdBy = req.user.id;
         let project;
 
-        // console.log("BODY:", req.body);
+        console.log("BODY:", req.body);
         // console.log("FILE:", req.file);
         if (req.file) {
             const file = {
@@ -183,6 +185,7 @@ exports.createTask = async (req, res, next) => {
                 size: req.file.size,
                 fileUrl: req.file.path.replace(/\\/g, '/'), // Normalize for web use
                 fileType: req.file.mimetype,
+                description: req.body.description
             };
             req.body.attachments = [file]; // Store file in the attachments array
         }
@@ -201,6 +204,20 @@ exports.createTask = async (req, res, next) => {
                 return next(new ErrorResponse(`User not found with id of ${req.body.assignedTo}`, 404));
             }
         }
+        // Calculate estimatedHours from dueDate
+        if (req.body.dueDate) {
+            const dueDate = new Date(req.body.dueDate);
+            const now = new Date();
+
+            if (dueDate > now) {
+                const diffInMs = dueDate - now;
+                const diffInHours = Math.ceil(diffInMs / (1000 * 60 * 60)); // convert ms to hours
+                req.body.estimatedHours = diffInHours;
+            } else {
+                req.body.estimatedHours = 0; // If dueDate is in the past or now
+            }
+        }
+
 
         // Add assigned user to project team if not already included
         if (project && req.body.assignedTo && Array.isArray(project.team) && !project.team.some(memberId => memberId.toString() === req.body.assignedTo.toString())) {
@@ -288,7 +305,7 @@ exports.createTask = async (req, res, next) => {
 exports.updateTask = async (req, res, next) => {
     try {
         const taskId = req.params.id;
-        console.log(req.body,"111111111111111111111111")
+        console.log(req.body, "111111111111111111111111", taskId)
         let task = await Task.findById(taskId);
 
         if (!task) {
@@ -307,6 +324,7 @@ exports.updateTask = async (req, res, next) => {
                 size: req.file.size,
                 fileUrl: req.file.path.replace(/\\/g, '/'),
                 fileType: req.file.mimetype,
+                description: req.body.description
             };
             req.body.attachments = [...(task.attachments || []), file];
         }
@@ -590,12 +608,15 @@ exports.updateTaskTime = async (req, res, next) => {
         };
 
         task.timeTracking.entries.push(timeEntry);
-
-        // Update total actual hours
-        task.timeTracking.actualHours = task.timeTracking.entries.reduce(
+        console.log(task)
+        // Update total actual hours in both timeTracking and root level
+        const totalActualHours = task.timeTracking.entries.reduce(
             (total, entry) => total + entry.hours,
             0
         );
+
+    
+        task.actualHours = totalActualHours; // <== This ensures it's saved at the root level too
 
         task.updatedBy = req.user.id;
 
@@ -608,17 +629,15 @@ exports.updateTaskTime = async (req, res, next) => {
                 select: 'name email'
             });
 
-        // Get the newly added time entry
         const newEntry = populatedTask.timeTracking.entries[populatedTask.timeTracking.entries.length - 1];
 
-        // Log the time entry addition
         logger.info(`Time entry added to task ${task.title} (${task._id}) by ${req.user.name} (${req.user._id}): ${hours} hours`);
 
         res.status(200).json({
             success: true,
             data: {
                 entry: newEntry,
-                totalActualHours: task.timeTracking.actualHours,
+                totalActualHours: totalActualHours,
                 estimatedHours: task.timeTracking.estimatedHours
             }
         });
@@ -626,6 +645,7 @@ exports.updateTaskTime = async (req, res, next) => {
         next(error);
     }
 };
+
 
 /**
  * @desc    Get tasks for current user
@@ -723,3 +743,42 @@ exports.markTaskAsInvoiced = async (req, res, next) => {
         next(error);
     }
 }; 
+exports.downloadDocument = async (req, res, next) => {
+    const { taskId, documentId } = req.params;
+
+    try {
+        const task = await Task.findById(taskId);
+
+        if (!task) {
+            return next(new ErrorResponse(`Task not found with id of ${taskId}`, 404));
+        }
+
+        // Access control
+        const isOwner = task.createdBy.toString() === req.user.id;
+        const isAdmin = req.user.role === 'admin';
+        const isShared = task.team?.some(userId => userId.toString() === req.user.id);
+
+        if (!isAdmin && !isOwner && !isShared) {
+            return next(new ErrorResponse('Not authorized to download this document', 403));
+        }
+
+        // Find the attachment
+        const attachment = task.attachments.find(att => att._id.toString() === documentId);
+        if (!attachment) {
+            return next(new ErrorResponse('Attachment not found', 404));
+        }
+
+        const filePath = path.join(__dirname, '../../', attachment.fileUrl);
+
+        console.log('📁 Downloading attachment:', filePath);
+        if (!fs.existsSync(filePath)) {
+            return next(new ErrorResponse('File not found on server', 404));
+        }
+
+        logger.info(`Attachment downloaded: ${attachment.name} by ${req.user.name} (${req.user._id})`);
+
+        res.download(filePath, attachment.name);
+    } catch (error) {
+        next(error);
+    }
+  };

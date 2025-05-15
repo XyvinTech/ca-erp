@@ -290,3 +290,10 @@ export const updateTaskTime = async (id, timeData, token) => {
     throw error;
   }
 };
+// Download document
+export const downloadDocument = async (taskId,documentId) => {
+  const response = await api.get(`/tasks/download/${taskId}/${documentId}`, {
+    responseType: 'blob',
+  });
+  return response.data;
+};
