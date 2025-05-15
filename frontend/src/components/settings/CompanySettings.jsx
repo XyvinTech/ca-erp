@@ -31,6 +31,7 @@ const CompanySettings = () => {
     }
   };
 
+  
   // Function to load company settings
   const loadCompanySettings = async () => {
     setLoading(true);
