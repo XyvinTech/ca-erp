@@ -180,7 +180,8 @@ const taskValidation = {
                   fileType: Joi.string(),
                   fileSize: Joi.number(),
                   team: Joi.array().items(Joi.string()),
-                  file: Joi.array().items(Joi.string()),
+            file: Joi.array().items(Joi.string()).default([]).optional(),
+
         }),
     }),
 

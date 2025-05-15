@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { projectsApi } from "../api";
 import { clientsApi } from "../api/clientsApi";
+import { useAuth } from "../context/AuthContext";
 
 const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
   const isEditMode = !!project;
+  const { user, role } = useAuth();
+  
 
   const {
     register,
@@ -194,6 +197,7 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
             )}
           </div>
 
+         {user.role != "staff" && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Budget (₹)
@@ -205,6 +209,7 @@ const ProjectForm = ({ project = null, onSuccess, onCancel }) => {
               placeholder="e.g. 500000"
             />
           </div>
+         )}
         </div>
 
         <div>

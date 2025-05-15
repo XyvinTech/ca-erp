@@ -18,7 +18,12 @@ const { protect, authorize } = require('../middleware/auth');
 const { validate } = require('../middleware/validator');
 const { taskValidation } = require('../middleware/validator');
 const { uploadTaskFile } = require('../middleware/upload');
-
+const ensureFileArray = (req, res, next) => {
+    if (!req.body) req.body = {}; // Ensure body exists
+    req.body.file = req.file ? [req.file.filename] : []; // If file exists, assign filename array; else, empty array
+    next(); // Continue to next middleware (validation)
+};
+  
 /**
  * @swagger
  * /api/tasks/me:
@@ -185,7 +190,7 @@ router.route('/')
      *       401:
      *         description: Unauthorized
      */
-    .post(protect, uploadTaskFile.single('file'), validate(taskValidation.create), createTask);
+    .post(protect, uploadTaskFile.single('file'), ensureFileArray, validate(taskValidation.create), createTask);
    
 
 /**

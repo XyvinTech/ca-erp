@@ -9,19 +9,44 @@ const CompanySettings = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Function to handle form submission
+  const [imageFile, setImageFile] = useState(null);
+  const [tempImage, setTempImage] = useState(null); 
+
+
+const uploadLogo = async (formData) => {
+  const response = await api.put("/settings/company/logo", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response;
+};
+
+  
   const onSubmit = async (data) => {
     try {
+
       setLoading(true);
+
+       if (imageFile) {
+          const formData = new FormData();
+          formData.append("logo", imageFile);
+          await uploadLogo(formData);
+          // setSuccessMessage("Logo uploaded successfully!");
+        }    
+// console.log("Uploading file:", imageFile);
+
       const response = await api.put("/settings", data);
       setSuccessMessage("Settings updated successfully!"); // success message
       console.log("Settings updated:", response.data);
 
       // Re-fetch the updated settings after saving
+      setTempImage(null);
+      setImageFile(null);
       await loadCompanySettings();
     } catch (error) {
       console.error("Failed to update settings:", error.message);
-      setErrorMessage("Failed to update settings."); // error message
+      // setErrorMessage("Failed to update settings."); // error message
     } finally {
       setLoading(false);
     }
@@ -32,14 +57,31 @@ const CompanySettings = () => {
     setLoading(true);
     try {
       const response = await api.get("/settings");
-      console.log("Fetched settings:", response.data);
+      console.log("Fetched settings:", response.data.data);
+      // const data = response.data.data;
 
       // Reset form values with the fetched settings
-      reset(response.data);
+      const data = response.data.data;
+
+      reset({
+        ...data,
+        currency: data.currency || "INR",
+        financialYearStart: data.financialYearStart || "April"
+      });
     } catch (error) {
       console.error("Failed to load company settings:", error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+
+  
+    const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setTempImage({ preview: URL.createObjectURL(file) });
+      setImageFile(file);
     }
   };
 
@@ -281,6 +323,7 @@ const CompanySettings = () => {
                       type="file"
                       className="sr-only"
                       accept="image/*"
+                      onChange={handleImageChange}
                       // Can't directly register file inputs with useForm
                       // In a real app, would need custom handling
                     />

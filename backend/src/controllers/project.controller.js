@@ -209,7 +209,7 @@ exports.getProject = async (req, res, next) => {
         projectObject.completedTasks = completedTasks;
         projectObject.completionPercentage = completionPercentage;
         // Remove budget if user is not admin or finance
-        if (!['admin', 'finance'].includes(req.user.role)) {
+        if (!['admin','manager', 'finance'].includes(req.user.role)) {
             delete projectObject.budget;
         }
 
@@ -299,8 +299,16 @@ exports.updateProject = async (req, res, next) => {
       }
   
       // Check access - only admin and assigned users can update
-      if (req.user.role !== 'admin' && project.assignedTo.toString() !== req.user.id.toString()) {
-        return next(new ErrorResponse(`User not authorized to update this project`, 403));
+      const isAdmin = req.user.role === 'admin';
+      const isManager = req.user.role === 'manager';
+      // console.log(isTeamMember, "isTeamMember")
+      const isTeamMember = project.team && Array.isArray(project.team) && 
+  project.team.some(teamMember => 
+      teamMember && teamMember.toString() === req.user.id.toString()
+  );
+
+      if (!isAdmin && !isTeamMember && !isManager) {
+          return next(new ErrorResponse("User not authorized to access this project", 403));
       }
   
       // Check if client exists
@@ -430,10 +438,10 @@ exports.getProjectTasks = async (req, res, next) => {
         if (!project) {
             return next(new ErrorResponse(`Project not found with id of ${req.params.id}`, 404));
         }
-        const page = parseInt(req.query.page, 10) || 1;
-        const limit = parseInt(req.query.limit, 10) || 10;
-        const startIndex = (page - 1) * limit;
-        const endIndex = page * limit;
+        // const page = parseInt(req.query.page, 10) || 1;
+        // const limit = parseInt(req.query.limit, 10) || 10;
+        // const startIndex = (page - 1) * limit;
+        // const endIndex = page * limit;
 
         // Check access - only admin and assigned users can view
         // if (req.user.role !== 'admin' && project.assignedTo.toString() !== req.user.id.toString()) {
@@ -441,13 +449,14 @@ exports.getProjectTasks = async (req, res, next) => {
         // }
 
         const isAdmin = req.user.role === 'admin';
+        const isManager = req.user.role === 'manager';
         // console.log(isTeamMember, "isTeamMember")
         const isTeamMember = project.team && 
             project.team.some(teamMember => 
                 teamMember.toString() === req.user.id.toString()
             );
 
-        if (!isAdmin && !isTeamMember) {
+        if (!isAdmin && !isTeamMember && !isManager) {
             return next(new ErrorResponse("User not authorized to access this project", 403));
         }
 
@@ -466,13 +475,13 @@ exports.getProjectTasks = async (req, res, next) => {
 
         //pagination
        
-        const total = await Task.countDocuments(filter);
+        // const total = await Task.countDocuments(filter);
 
 
         const tasks = await Task.find(filter)
             .sort({ dueDate: 1, priority: -1 })
-            .skip(startIndex)
-            .limit(limit)
+            // .skip(startIndex)
+            // .limit(limit)
             .populate({
                 path: 'assignedTo',
                 select: 'name email avatar'
@@ -482,28 +491,28 @@ exports.getProjectTasks = async (req, res, next) => {
                 select: 'name email'
             });
 
-             const pagination = {};
+        //      const pagination = {};
 
-            if (endIndex < total) {
-                pagination.next = {
-                    page: page + 1,
-                    limit,
-                };
-            }
+        //     if (endIndex < total) {
+        //         pagination.next = {
+        //             page: page + 1,
+        //             limit,
+        //         };
+        //     }
 
-            if (startIndex > 0) {
-                pagination.prev = {
-                    page: page - 1,
-                    limit,
-            };
-        }
+        //     if (startIndex > 0) {
+        //         pagination.prev = {
+        //             page: page - 1,
+        //             limit,
+        //     };
+        // }
 
 
         res.status(200).json({
             success: true,
             count: tasks.length,
-            pagination,
-            total,
+            // pagination,
+            // total,
             data: tasks,
         });
     } catch (error) {
@@ -535,10 +544,19 @@ exports.updateProjectStatus = async (req, res, next) => {
         }
 
         // Check if the user is authorized to update the project (admin or assigned user)
-        if (req.user.role !== 'admin' && project.assignedTo.toString() !== req.user.id.toString()) {
-            return next(new ErrorResponse('User not authorized to update this project', 403));
-        }
+       
 
+        const isAdmin = req.user.role === 'admin';
+        const isManager = req.user.role === 'manager';
+        // console.log(isTeamMember, "isTeamMember")
+        const isTeamMember = project.team && Array.isArray(project.team) && 
+    project.team.some(teamMember => 
+        teamMember && teamMember.toString() === req.user.id.toString()
+    );
+
+        if (!isAdmin && !isTeamMember && !isManager) {
+            return next(new ErrorResponse("User not authorized to access this project", 403));
+        }
         // Update the project status
         project.status = status;
 

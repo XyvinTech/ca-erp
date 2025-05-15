@@ -75,7 +75,7 @@ const { validate, userValidation } = require('../middleware/validator');
  *         description: Forbidden
  */
 router.route('/')
-    .get(protect, authorize('admin'), getUsers)
+    .get(protect, authorize('admin','manager'), getUsers)
     /**
      * @swagger
      * /api/users:

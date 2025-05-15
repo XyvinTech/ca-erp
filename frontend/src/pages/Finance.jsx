@@ -37,8 +37,8 @@ const Finance = () => {
   const [successMessage, setSuccessMessage] = useState("");
 
   const [filters, setFilters] = useState({
-    task: "",
-    assignedTo: "",
+    project: "",
+    client: "",
   });
 
   const loadProjects = async () => {
@@ -89,8 +89,8 @@ const Finance = () => {
 
   const resetFilters = () => {
     setFilters({
-      // task: "",
-      assignedTo: "",
+      project: "",
+      client: "",
     });
   };
 
@@ -138,14 +138,16 @@ const Finance = () => {
 
   const filteredProjects = projects.filter((p) => {
     if (p.status !== 'completed') return false;
+    console.log(p,"filteredpro");
     if (filters.project && p.id !== filters.project) return false;
-    if (filters.assignedTo && p.assignedTo?._id !== filters.assignedTo) return false;
+    if (filters.client && p.client?.id !== filters.client) return false;
     return true;
   });
 
-console.log(projects,'consolved project');
 
-  // const Tasks = [
+// console.log(projects,'consolved project');
+
+  // const project = [
   //   ...new Map(
   //     projects.map((pro) => [
   //       pro.task?.id,
@@ -155,17 +157,18 @@ console.log(projects,'consolved project');
   // ].filter((project) => project.id);
 
 
-  console.log(projects,"hiii");
+  // console.log(projects,"hiii");
 
 
-  const teamMembers = Array.from(
-    new Map(
-      projects.map(p => [p.assignedTo?._id, {
-        id: p.assignedTo?._id,
-        name: p.assignedTo?.name,
-      }])
-    ).values()
-  ).filter(member => member.id && member.name);
+  const client = Array.from(
+  new Map(
+    projects.map(p => [p.client?.id, {
+      id: p.client?.id,
+      name: p.client?.name,
+    }])
+  ).values()
+).filter(c => c.id && c.name);
+
 
   const selectedProjectsData = projects.filter(p => selectedProjects.includes(p.id));
   const totalAmount = selectedProjectsData.reduce((sum, p) => sum + Number(p.cost || 0), 0);
@@ -259,47 +262,47 @@ console.log(projects,'consolved project');
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* <div>
+          <div>
             <label
               htmlFor="project"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Task
+              project
             </label>
             <select
               id="project"
               name="project"
-              value={filters.task}
+              value={filters.project}
               onChange={handleFilterChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">All Task</option>
-              {taks.map((task) => (
-                <option key={task.id} value={task.id}>
-                  {task.name}
+              <option value="">All project</option>
+              {projects.map((pro) => (
+                <option key={pro.id} value={pro.id}>
+                  {pro.name}
                 </option>
               ))}
             </select>
-          </div> */}
+          </div>
 
           <div>
             <label
-              htmlFor="assignedTo"
+              htmlFor="project"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Assigned To
+              client
             </label>
             <select
-              id="assignedTo"
-              name="assignedTo"
-              value={filters.assignedTo}
+              id="client"
+              name="client"
+              value={filters.client}
               onChange={handleFilterChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">All Team Members</option>
-              {teamMembers.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name}
+              <option value="">All clients</option>
+              {client.map((cl) => (
+                <option key={cl.id} value={cl.id}>
+                  {cl.name}
                 </option>
               ))}
             </select>
@@ -338,7 +341,7 @@ console.log(projects,'consolved project');
         </div>
       )}
 
-      {/* Tasks List */}
+      {/* project List */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-lg font-medium text-gray-900">
@@ -410,7 +413,7 @@ console.log(projects,'consolved project');
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {projects.map((pro) => (
+          {filteredProjects.map((pro) => (
             <tr
               key={pro.id}
               className={

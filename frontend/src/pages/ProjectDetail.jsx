@@ -52,6 +52,12 @@ const ProjectDetail = () => {
   const [editingNoteId, setEditingNoteId] = useState(null); // Track which note is being edited
   const [docToDelete, setDocToDelete] = useState(null);
   const [noteToDelete, setNoteToDelete] = useState(null);
+
+  const [docCurrentPage, setDocCurrentPage] = useState(1);
+  const docsPerPage = 5;
+  const [noteCurrentPage, setNoteCurrentPage] = useState(1);
+  const notesPerPage = 5;
+
   useEffect(() => {
     const loadProject = async () => {
       try {
@@ -248,6 +254,7 @@ const handleEditDocumentClick = (doc) => {
 
 
 
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -337,6 +344,32 @@ const handleEditDocumentClick = (doc) => {
       maximumFractionDigits: 0,
     }).format(amount);
   };
+
+  const activeDocuments = project.documents?.filter(doc => !doc.deleted) || [];
+  const totalDocPages = Math.ceil(activeDocuments.length / docsPerPage);
+
+  const currentDocuments = activeDocuments.slice(
+    (docCurrentPage - 1) * docsPerPage,
+    docCurrentPage * docsPerPage
+  );
+
+  const filteredNotes = project.notes?.filter(note => !note.deleted) || [];
+  const totalNotePages = Math.ceil(filteredNotes.length / notesPerPage);
+
+  const paginatedNotes = filteredNotes.slice(
+    (noteCurrentPage - 1) * notesPerPage,
+    noteCurrentPage * notesPerPage
+  );
+
+  // Handle page navigation
+  const goToNextDocPage = () => {
+  setDocCurrentPage((prev) => Math.min(prev + 1, totalDocPages));
+};
+
+const goToPrevDocPage = () => {
+  setDocCurrentPage((prev) => Math.max(prev - 1, 1));
+};
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -531,7 +564,7 @@ const handleEditDocumentClick = (doc) => {
                   </h3>
                   <div className="bg-gray-50 rounded-lg p-4">
                     {project.team?.length > 0 ? (
-                      <ul className="grid grid-cols-2 gap-y-4 gap-x-6">
+                      <ul className={`grid gap-y-4 gap-x-6 ${project.team.length > 5 ? 'grid-cols-2' : 'grid-cols-1' }`}>
                         {project.team.map((member) => (
                           <li key={member.id} className="flex items-center">
                             <div className="flex-shrink-0">
@@ -588,6 +621,7 @@ const handleEditDocumentClick = (doc) => {
             <ProjectTasks projectId={id} tasks={project.tasks} />
           )}
 
+
           {activeTab === "documents" && (
             <div>
               <div className="flex justify-between mb-4">
@@ -604,9 +638,10 @@ const handleEditDocumentClick = (doc) => {
                   ) :([])}
               </div>
               {project.documents?.length > 0 ? (
+                <>
                 <div className="bg-gray-50 rounded-lg overflow-hidden">
                   <ul className="divide-y divide-gray-200">
-                    {project.documents?.filter(doc => !doc.deleted).map((doc) => (
+                    {currentDocuments.map((doc) => (
                       <li key={doc._id} className="p-4 hover:bg-gray-100">
                         <div className="flex  justify-between">
                           <div className="flex ">
@@ -672,6 +707,67 @@ const handleEditDocumentClick = (doc) => {
                           ))}
                         </ul>
                       </div>
+                      {/* Pagination controls */}
+                    {totalDocPages > 1 && (
+                      <div className="flex justify-between items-center mt-4 pt-2 border-t">
+                        <button
+                          onClick={goToPrevDocPage}
+                          disabled={docCurrentPage === 1}
+                          className={`flex items-center text-sm font-medium p-1 ${
+                            docCurrentPage === 1
+                              ? "text-gray-400 cursor-not-allowed"
+                              : "text-blue-600 hover:text-blue-800"
+                          }`}
+                        >
+                          <svg
+                            className="w-5 h-5 mr-1"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M15 19l-7-7 7-7"
+                            ></path>
+                          </svg>
+                          Previous
+                        </button>
+
+                        <span className="text-sm text-gray-600">
+                          Page {docCurrentPage} of {totalDocPages}
+                        </span>
+
+                        <button
+                          onClick={goToNextDocPage}
+                          disabled={docCurrentPage === totalDocPages}
+                          className={`flex items-center text-sm font-medium p-1 ${
+                            docCurrentPage === totalDocPages
+                              ? "text-gray-400 cursor-not-allowed"
+                              : "text-blue-600 hover:text-blue-800"
+                          }`}
+                        >
+                          Next
+                          <svg
+                            className="w-5 h-5 ml-1"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M9 5l7 7-7 7"
+                            ></path>
+                          </svg>
+                        </button>
+                      </div>
+                      )}
+                    </>
                     ) : (
                       <div className="bg-gray-50 rounded-lg p-8 text-center">
                         <p className="text-gray-500 mb-4">
@@ -685,71 +781,114 @@ const handleEditDocumentClick = (doc) => {
             </div>
           )}
 
-{activeTab === "notes" && (
-  <div>
-    <div className="flex justify-between mb-4">
-      <h3 className="text-lg font-medium text-gray-900">Notes</h3>
-      {project.notes?.length > 0 ? (
-      <button
-        onClick={() => setIsAddNotesModalOpen(true)}
-        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-      >
-        Add Note
-      </button>
-      ):([])}
-    </div>
 
-    {project.notes?.length > 0 ? (
-      <div className="space-y-4">
-                  {project.notes.filter(note => !note.deleted).map((note) => (
-          <div
-            key={note.id}
-            className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-          >
-            <p className="text-sm text-gray-700">{note.content}</p>
-            <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-              <div className="flex items-center">
-                <span className="font-medium text-gray-700 mr-2">
-                  {note.author?.name || "Unknown Author"}
-                </span>
-                <span>
-                  {new Date(note.createdAt).toLocaleDateString()} at{" "}
-                  {new Date(note.createdAt).toLocaleTimeString()}
-                </span>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleEditNote(note)}
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  <CiEdit size={20} />
-                </button>
-                <button
-  onClick={() => setNoteToDelete(note)}
-  className="text-red-600 hover:text-red-800 font-bold"
->
-  <MdDelete size={20} />
-</button>
-              </div>
-            </div>
+
+      {activeTab === "notes" && (
+        <div>
+          <div className="flex justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">Notes</h3>
+            {project.notes?.length > 0 ? (
+            <button
+              onClick={() => setIsAddNotesModalOpen(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Add Note
+            </button>
+            ):([])}
           </div>
-        ))}
-      </div>
-    ) : (
-      <div className="bg-gray-50 rounded-lg p-8 text-center">
-        <p className="text-gray-500 mb-4">
-          No notes added for this project yet.
-        </p>
-        <button
-          onClick={() => setIsAddNotesModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          Add Note
-        </button>
-      </div>
-    )}
-  </div>
-)}
+
+          {project.notes?.length > 0 ? (
+            <>
+            <div className="space-y-4">
+            {paginatedNotes.map((note) => (
+                <div
+                  key={note.id}
+                  className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                >
+                  <p className="text-sm text-gray-700">{note.content}</p>
+                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                    <div className="flex items-center">
+                      <span className="font-medium text-gray-700 mr-2">
+                        {note.author?.name || "Unknown Author"}
+                      </span>
+                      <span>
+                        {new Date(note.createdAt).toLocaleDateString()} at{" "}
+                        {new Date(note.createdAt).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEditNote(note)}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <CiEdit size={20} />
+                      </button>
+                      <button
+                        onClick={() => setNoteToDelete(note)}
+                        className="text-red-600 hover:text-red-800 font-bold"
+                      >
+                        <MdDelete size={20} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+              {totalNotePages > 1 && (
+                <div className="flex justify-between items-center px-6 py-4 border-t">
+                  <button
+                    onClick={() => setNoteCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={noteCurrentPage === 1}
+                    className={`flex items-center text-sm font-medium ${
+                      noteCurrentPage === 1
+                        ? "text-gray-400 cursor-not-allowed"
+                        : "text-blue-600 hover:text-blue-800"
+                    }`}
+                  >
+                    <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Previous
+                  </button>
+
+                  <span className="text-sm text-gray-600">
+                    Page {noteCurrentPage} of {totalNotePages}
+                  </span>
+
+                  <button
+                    onClick={() => setNoteCurrentPage((prev) => Math.min(prev + 1, totalNotePages))}
+                    disabled={noteCurrentPage === totalNotePages}
+                    className={`flex items-center text-sm font-medium ${
+                      noteCurrentPage === totalNotePages
+                        ? "text-gray-400 cursor-not-allowed"
+                        : "text-blue-600 hover:text-blue-800"
+                    }`}
+                  >
+                    Next
+                    <svg className="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+
+            </>
+          ) : (
+            <div className="bg-gray-50 rounded-lg p-8 text-center">
+              <p className="text-gray-500 mb-4">
+                No notes added for this project yet.
+              </p>
+              <button
+                onClick={() => setIsAddNotesModalOpen(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Add Note
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
         </div>
       </div>

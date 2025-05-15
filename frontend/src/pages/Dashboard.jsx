@@ -460,14 +460,14 @@ const ActivityItem = ({ activity }) => {
           </p>
         </div>
         <p className="text-sm text-gray-600 mt-1">{activity.description}</p>
-        {activity.link && (
+        {/* {activity.link && (
           <Link
             to={activity.link}
             className="text-sm text-blue-600 hover:text-blue-800 mt-1 inline-block"
           >
             View details
           </Link>
-        )}
+        )} */}
       </div>
     </div>
   );
