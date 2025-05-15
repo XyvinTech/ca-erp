@@ -130,7 +130,6 @@ const SettingsSchema = new mongoose.Schema(
             },
             logo: {
                 type: String,
-                default: '',
             },
         },
         system: {
